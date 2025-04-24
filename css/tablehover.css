@@ -1,0 +1,9 @@
+.table-link {
+    transition: background-color 0.2s ease;
+  }
+  
+  .table-link:hover {
+    background-color: rgba(77, 102, 112, 0.2); /* subtle white glow */
+    color: #0884f1 !important;
+  }
+  

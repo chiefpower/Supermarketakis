@@ -1,0 +1,14 @@
+Array
+(
+    [firstName] => Anastasios
+    [lastName] => Tsiftsis
+    [email] => chiefpower.gwerwro2@gmail.com
+    [phone] => +420774940796
+    [addressLine1] => Pod Pramenem 4
+    [addressLine2] => C.P. 1504
+    [country] => CZ
+    [zipCode] => 140 00
+    [notes] => 
+    [promoCode] => 
+    [cartItems] => [{"id":"1","name":"Milk","price":1.99,"quantity":8}]
+)

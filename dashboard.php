@@ -258,7 +258,7 @@ require_once 'db.php';
                       <a href="#tables" class="nav-link" id="load-tables">Tables</a>
                     </li>
                     <li class="nav-item dropdown">
-                      <a href="#men" class="nav-link">Sales</a>
+                      <a href="sales_actions.php" class="nav-link">Sales</a>
                     </li>
                     <li class="nav-item">
                       <a href="#kids" class="nav-link">Orders</a>
@@ -324,7 +324,7 @@ require_once 'db.php';
                     <div class="banner-ad large bg-info block-1 p-4" id="content-area" style="min-height: 20rem; max-height: 80vh;  max-width: 100%; overflow: auto;">
                         
                         <p class="text-black">Select a menu item to display content here.</p>
-                     
+                        
                     </div>
                 </div>
 

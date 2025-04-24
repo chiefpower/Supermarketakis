@@ -1,5 +1,4 @@
-// checkoutlogic.js (using CommonJS require)
-//const cart = require('./shoppingCart.js');
+// checkoutlogic.js 
 import { emptyCart } from './testcart.js';
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -7,15 +6,12 @@ document.addEventListener("DOMContentLoaded", function () {
     const messageBox = document.getElementById("message");
     messageBox.innerHTML = "";
 
-    
-
     form.addEventListener("submit", function (e) {
         e.preventDefault(); // Prevent default form submission
 
         const cartItems = JSON.parse(localStorage.getItem('shoppingCart')) || [];
         const userData = new FormData(form); // Get form data (user details)
         
-        //const formData = new FormData(form);
          // Add cart items to the form data
         userData.append("cartItems", JSON.stringify(cartItems)); // Convert cart items to JSON string
        
@@ -43,7 +39,7 @@ document.addEventListener("DOMContentLoaded", function () {
             })
             .catch(error => {
                 // Unexpected error: Display a generic error message
-                //console.log("Parsed result:", error);
+                console.log("Parsed result:", error);
                 messageBox.innerHTML = `<div class="alert alert-danger">An unexpected error occurred. Please try again.</div>`;
             });
     });

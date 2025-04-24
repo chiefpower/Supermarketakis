@@ -384,8 +384,17 @@
                   
                     <div class="row mb-3">
                       <div class="col">
-                        <label for="promoCode" class="form-label">Promo Code (Optional)</label>
-                        <input type="text" class="form-control" id="promoCode" name="promoCode">
+                        <label for="preferredStore" class="form-label">Preferred Store (Optional)</label>
+                        <select class="form-select" id="preferredStore" name="preferred_store_id">
+                          <option value="">-- Select Store (Optional) --</option>
+                          <?php
+                            $storeQuery = "SELECT store_id, name FROM stores ORDER BY name";
+                            $storeResult = $conn->query($storeQuery);
+                            while ($store = $storeResult->fetch_assoc()) {
+                              echo "<option value='" . htmlspecialchars($store['store_id']) . "'>" . htmlspecialchars($store['name']) . "</option>";
+                            }
+                          ?>
+                        </select>
                       </div>
                     </div>
                   

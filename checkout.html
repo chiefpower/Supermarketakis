@@ -384,8 +384,10 @@
                   
                     <div class="row mb-3">
                       <div class="col">
-                        <label for="promoCode" class="form-label">Promo Code (Optional)</label>
-                        <input type="text" class="form-control" id="promoCode" name="promoCode">
+                        <label for="preferredStore" class="form-label">Preferred Store (Optional)</label>
+                        <select class="form-select" id="preferredStore" name="preferred_store_id">
+                          <option value="">-- Select Store (Optional) --</option>
+                        </select>
                       </div>
                     </div>
                   
@@ -571,6 +573,7 @@
   <script src="js/script.js"></script>
   <script src="js/shoppingCart.js"></script>
   <script src="js/countrynames.js"></script>
+  <script src="js/storenames.js"></script>
   <script type="module" src="js/checkoutlogic.js"></script>
   <script type="module" src="js/testcart.js"></script>
 </body>

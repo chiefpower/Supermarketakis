@@ -3,7 +3,7 @@ function createGuestOrderWithItems(PDO $pdo, array $userData, array $orderItems,
     try {
         // Start transaction
         $pdo->beginTransaction();
-
+        file_put_contents('debug_post.txt', print_r( $userData, true));
         // 1. Create a guest user
         $randomSuffix = str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
         $guestUsername = 'guest_' . $randomSuffix;
@@ -17,7 +17,7 @@ function createGuestOrderWithItems(PDO $pdo, array $userData, array $orderItems,
         $stmt = $pdo->prepare("
             INSERT INTO user_profiles (
                 user_id, first_name, last_name, phone, address_line_1, address_line_2,
-                country, zip_code, notes, promo_code, is_guest
+                country, zip_code, notes, preferred_store_id, is_guest
             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, TRUE)
         ");
         $stmt->execute([
@@ -30,9 +30,9 @@ function createGuestOrderWithItems(PDO $pdo, array $userData, array $orderItems,
             $userData['country'],
             $userData['zip_code'],
             $userData['notes'] ?? null,
-            $userData['promo_code'] ?? null
+            $userData['preferred_store_id'] ?? null
         ]);
-
+        //file_put_contents('debug_post.txt', print_r( $userData, true));
         // 3. Create the order
         $stmt = $pdo->prepare("INSERT INTO user_orders (user_id, total_price) VALUES (?, ?)");
         $stmt->execute([$userId, $totalPrice]);

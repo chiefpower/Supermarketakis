@@ -168,12 +168,10 @@ $(document).ready(function() {
                 }
             },
             error: function(response) {
-                $feedback.text('An error occurred').removeClass('text-success').addClass('text-danger');
-               // console.log('Cback-to-tables3:',$feedback);
+                //$feedback.text('An error occurred').removeClass('text-success').addClass('text-danger');
              //   messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
                 messageBox.html(`<div class="alert alert-danger">${response.message}</div>`);
                 console.log('Full response2:', response);
-               // console.error('Error from server:', response.message);
             }
         });
     });

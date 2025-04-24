@@ -7,6 +7,20 @@ include 'order_functions.php';
 
 // Check if the form was submitted
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+
+    $preferredStore = $_POST['preferred_store_id'] ?? null;
+    //file_put_contents('debug21_post.txt', print_r(  $userData, true));
+    // If no store selected, get a random one
+    if (empty($preferredStore)) {
+        $randomStoreQuery = "SELECT store_id FROM stores ORDER BY RAND() LIMIT 1";
+        $randomResult = $conn->query($randomStoreQuery);
+
+        if ($randomResult && $row = $randomResult->fetch_assoc()) {
+            $preferredStore = $row['store_id'];
+        }
+        //file_put_contents('debug_post2.txt', print_r( $preferredStore, true));
+    }
+
     // Sanitize and retrieve form data
     $userData = [
         'first_name'    => htmlspecialchars($_POST['firstName']),
@@ -18,10 +32,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'country'       => htmlspecialchars($_POST['country']),
         'zip_code'      => htmlspecialchars($_POST['zipCode']),
         'notes'         => isset($_POST['notes']) ? htmlspecialchars($_POST['notes']) : '',
-        'promo_code'    => isset($_POST['promoCode']) ? htmlspecialchars($_POST['promoCode']) : ''
+        'preferred_store_id' =>  $preferredStore
         
     ];
-    //file_put_contents('debug_post.txt', print_r($_POST, true));
+    //file_put_contents('debug5_post.txt', print_r($_POST, true));
     // Decoding the JSON into an associative array
     $orderItems = json_decode($_POST['cartItems'], true);
     
@@ -33,6 +47,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ]);
         exit;
     }
+
+   
+    //file_put_contents('debug_wpost2.txt', print_r( $preferredStore, true));
     // Product IDs and their quantities and prices (should be passed from the cart, etc.)
    // $orderItems = [
    //     ['product_id' => 1, 'quantity' => 2, 'price' => 3.50],

@@ -80,19 +80,28 @@ if ($metaResult) {
 }
 
 while ($row = $result->fetch_assoc()) {
-    echo "<form class='edit-row-form mb-2 p-2 border rounded bg-light d-flex align-items-center flex-wrap gap-2'>";
+    $primaryKeyValue = $row[$primaryKey];
+
+    $messageId = 'message-' . $primaryKeyValue;
+
+    echo "<form class='edit-row-form mb-2 p-2 border rounded bg-light d-flex align-items-center flex-wrap gap-2' data-id='" . htmlspecialchars($primaryKeyValue) . "'>";
+
+    // Hidden fields
+    echo "<input type='hidden' name='table' value='" . htmlspecialchars($table) . "'>";
+    echo "<input type='hidden' name='primaryKey' value='" . htmlspecialchars($primaryKey) . "'>";
+    echo "<input type='hidden' name='primaryValue' value='" . htmlspecialchars($primaryKeyValue) . "'>";
 
     foreach ($row as $column => $value) {
         $type = $columnMeta[$column] ?? 'text';
         $inputType = 'text';
 
-        // Adjust input type based on column SQL type
+        // Determine input type from SQL column type
         if (preg_match('/int|bigint/', $type)) {
             $inputType = 'number';
-            $step = 'step="1"'; // integers
+            $step = 'step="1"';
         } elseif (preg_match('/float|double|decimal/', $type)) {
             $inputType = 'number';
-            $step = 'step="0.01"'; // for decimals
+            $step = 'step="0.01"';
         } elseif (preg_match('/date/', $type)) {
             $inputType = 'date';
         } elseif (preg_match('/time/', $type)) {
@@ -101,56 +110,39 @@ while ($row = $result->fetch_assoc()) {
             $inputType = 'textarea';
         } elseif (preg_match('/bool/', $type)) {
             $inputType = 'checkbox';
-        } else {
-            $inputType = 'text';
         }
 
         echo "<div class='d-flex flex-column'>";
-        echo "<label class='small fw-bold mb-1'>$column</label>";
+        echo "<label class='small fw-bold mb-1'>" . htmlspecialchars($column) . "</label>";
 
         if ($inputType === 'textarea') {
             echo "<textarea class='form-control form-control-sm' name='" . htmlspecialchars($column) . "'>" . htmlspecialchars($value) . "</textarea>";
         } elseif ($inputType === 'checkbox') {
+            // Hidden fallback for unchecked box
+            echo "<input type='hidden' name='" . htmlspecialchars($column) . "' value='0'>";
             $checked = ($value) ? 'checked' : '';
             echo "<input type='checkbox' class='form-check-input' name='" . htmlspecialchars($column) . "' value='1' $checked>";
         } else {
             $extra = '';
-            $step = ''; // for float numbers
-            // Apply min="0" to numeric inputs
-            // Additional validations
-            if ($inputType === 'number') {
-                // Fields that shouldn't accept negative values
-                if (preg_match('/price|amount|quantity|count|total|salary/i', $column)) {
-                    $extra .= ' min="0"';
-                }
-
-                // Specific decimal support for salary
-                if (preg_match('/salary/i', $column)) {
-                    $step = 'step="0.01"';
-                }
-
-                // If not float or decimal but still numeric
-                if (!$step) {
-                    $step = 'step="1"';
-                }
+            $step = ($inputType === 'number') ? 'step="1"' : '';
+            if ($inputType === 'number' && preg_match('/salary|amount|price|count|quantity/i', $column)) {
+                $extra .= ' min="0"';
+                $step = 'step="0.01"';
             }
+
             echo "<input type='$inputType' class='form-control form-control-sm' name='" . htmlspecialchars($column) . "' value='" . htmlspecialchars($value) . "' $extra $step>";
         }
 
         echo "</div>";
     }
-    $primaryKeyValue = $row[$primaryKey]; // Add this line before echoing form
 
-    echo "<form class='edit-row-form mb-2 p-2 border rounded bg-light d-flex align-items-center flex-wrap gap-2' data-id='" . htmlspecialchars($primaryKeyValue) . "'>";
-    echo "<input type='hidden' name='table' value='" . htmlspecialchars($table) . "'>";
-    echo "<input type='hidden' name='primaryKey' value='" . htmlspecialchars($primaryKey) . "'>";
-    echo "<input type='hidden' name='primaryValue' value='" . htmlspecialchars($primaryKeyValue) . "'>";
-
-
+    //echo "<div id='message' class='mt-3'></div>";
+    
     echo "<button type='submit' class='btn btn-sm btn-success ms-2'>Save</button>";
-    echo "<div id='message' class='mt-3'>";
+    echo "<div id='$messageId' class='mt-3'></div>";
     echo "</form>";
 }
+
 
 
 function getPrimaryKey($conn, $table) {

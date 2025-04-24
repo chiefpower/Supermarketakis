@@ -41,7 +41,7 @@ foreach ($_POST as $key => $val) {
 
     $updateParts[] = "`$key` = ?";
     
-    // Handle NULL
+    // Handle NULL values
     if ($val === '' || strtolower($val) === 'null') {
         $types .= 's';
         $values[] = null;
@@ -69,12 +69,22 @@ foreach ($_POST as $key => $val) {
     }
 }
 
-// Add primary key WHERE clause
-$updateParts[] = "`$primaryKey` = ?";
+
+// Primary key condition (WHERE clause)
+$whereClause = "`$primaryKey` = ?";
 $types .= is_numeric($primaryValue) ? 'i' : 's';
 $values[] = $primaryValue;
 
-$sql = "UPDATE `$table` SET " . implode(', ', array_slice($updateParts, 0, -1)) . " WHERE " . end($updateParts);
+if (empty($whereClause)) {
+    echo json_encode(['status' => 'error', 'message' => 'No fields provided to update.']);
+    exit;
+}
+
+//error_log("Executing SQL: $sql");
+//error_log("Types: $types");
+//error_log("Values: " . json_encode($values));
+// Construct the SQL query
+$sql = "UPDATE `$table` SET " . implode(', ', $updateParts) . " WHERE $whereClause";
 $stmt = $conn->prepare($sql);
 
 if (!$stmt) {
@@ -82,7 +92,7 @@ if (!$stmt) {
     exit;
 }
 
-// Bind parameters dynamically (support NULLs)
+// Bind parameters dynamically
 $bindValues = [];
 foreach ($values as $i => $val) {
     $bindValues[$i] = &$values[$i];

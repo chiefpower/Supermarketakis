@@ -139,31 +139,39 @@ $(document).ready(function() {
       $(document).on('submit', '.edit-row-form', function(e) {
         e.preventDefault();
         
-        const messageBox = document.getElementById('message');
+       // const messageBox = document.getElementById('message');
+        const messageBox = $(this).find('.message-box');
         const $form = $(this);
         const formData = $form.serialize();
         const $feedback = $form.find('.save-feedback');
-        
+        //console.log('Submitting form data:', formData);
+       // console.log('Form data being submitted:');
+       // $form.serializeArray().forEach(f => console.log(f.name + ' = ' + f.value));
         $.ajax({
             url: 'update_row.php',
             method: 'POST',
             data: formData,
             dataType: 'json',
             success: function(response) {
+                const messageId = $form.data('id');
+                const messageBox = $('#message-' + messageId); // Get the unique message div for this form
                 if (response.status === 'success') {
                    // $feedback.text(response.message).removeClass('text-danger').addClass('text-success');
-                    messageBox.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
-                    console.log('Cback-to-tables:',$feedback);
+                   // messageBox.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
+                   messageBox.html(`<div class="alert alert-success">${response.message}</div>`);
+                   console.log('Cback-to-tables:',messageBox);
                 } else {
                     //$feedback.text(response.message).removeClass('text-success').addClass('text-danger');
-                    messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
-                    console.log('Full response1:', response);
+                   // messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
+                   messageBox.html(`<div class="alert alert-danger">${response.message}</div>`);
+                   console.log('Full response1:', response);
                 }
             },
             error: function(response) {
                 $feedback.text('An error occurred').removeClass('text-success').addClass('text-danger');
                // console.log('Cback-to-tables3:',$feedback);
-                messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
+             //   messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
+                messageBox.html(`<div class="alert alert-danger">${response.message}</div>`);
                 console.log('Full response2:', response);
                // console.error('Error from server:', response.message);
             }

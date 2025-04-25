@@ -152,7 +152,7 @@ function processOrderReductions($conn, $selectedDate) {
         // Start a transaction to ensure that either all reductions are processed or none
         $conn->begin_transaction();
 
-        // Query to get the order items to be processed
+        // Query to get the order items to be processed for the specific selectedDate
         $sql = "
             SELECT 
                 uoi.product_id,
@@ -169,9 +169,16 @@ function processOrderReductions($conn, $selectedDate) {
                 store_inventory si ON si.product_id = uoi.product_id AND si.store_id = up.preferred_store_id
             WHERE 
                 uo.status IN ('confirmed', 'shipped', 'delivered')
+                AND DATE(uo.created_at) = ?  -- Filtering by the selected date
         ";
 
-        $result = $conn->query($sql);
+        // Prepare the statement and bind the selectedDate
+        $stmt = $conn->prepare($sql);
+        $stmt->bind_param("s", $selectedDate);
+        $stmt->execute();
+        $result = $stmt->get_result();
+
+        // Flag to track if any reductions were performed
         $reductionsPerformed = false;
 
         if ($result->num_rows > 0) {
@@ -185,7 +192,7 @@ function processOrderReductions($conn, $selectedDate) {
                 $product_name = getProductName($conn, $product_id);
                 $store_name = getStoreName($conn, $store_id);
 
-                // Reduce the quantity
+                // Reduce the quantity in the inventory
                 $update = $conn->prepare("
                     UPDATE store_inventory
                     SET quantity = quantity - ?
@@ -202,12 +209,11 @@ function processOrderReductions($conn, $selectedDate) {
                 $reductionsPerformed = true;
             }
         } else {
-            echo "<p class='text-black'>No order items to process.</p>";
+            echo "<p class='text-black'>No orders found for the selected date: " . htmlspecialchars($selectedDate) . "</p>";
         }
 
-        // If reductions were performed, insert the reduction record
+        // If reductions were performed, insert the reduction entry
         if ($reductionsPerformed) {
-            // Insert the reduction entry only if reductions have been made
             $stmt = $conn->prepare("INSERT INTO inventory_reductions (reduction_date) VALUES (?)");
             $stmt->bind_param("s", $selectedDate);
             $stmt->execute();
@@ -264,7 +270,7 @@ try {
               <div class="card mb-4 shadow">
                 <div class="card-body bg-light">
                   <h5 class="card-title text-primary">Total Sales for All Stores on ' . htmlspecialchars($selectedDate) . '</h5>
-                  <p class="card-text display-6 fw-bold text-dark">$' . number_format((float)$total_sales, 2) . '</p>
+                  <p class="card-text display-6 fw-bold text-dark">€' . number_format((float)$total_sales, 2) . '</p>
                 </div>
               </div>
             ';
@@ -284,7 +290,7 @@ try {
                     echo '
                       <li class="list-group-item d-flex justify-content-between align-items-center">
                         <strong>' . htmlspecialchars($store['store_name']) . ' (ID: ' . $store['store_id'] . ')</strong>
-                        <span class="badge bg-success fs-6">$' . number_format((float)$store['store_sales'], 2) . '</span>
+                        <span class="badge bg-success fs-6">€' . number_format((float)$store['store_sales'], 2) . '</span>
                       </li>';
                 }
                 echo '</ul>';

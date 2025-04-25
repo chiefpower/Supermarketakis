@@ -20,7 +20,7 @@ $(document).on('click', '#graph-actions', function (e) {
           data: {
             labels: response.labels,
             datasets: [{
-              label: 'Total Sales ($)',
+              label: 'Total Sales (€)',
               data: response.data,
               backgroundColor: 'rgba(54, 162, 235, 0.2)',
               borderColor: 'rgba(54, 162, 235, 1)',

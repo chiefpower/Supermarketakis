@@ -1,12 +1,9 @@
 $(document).ready(function() {
- // Click event for loading sales
-  //  $('#sales-actions').click(function(e) {
-   // $(document).on('click', '#sales-actions', function (e) {
+    // Click event for loading sales
     $('#sales-actions').on('click', function (e) {
         e.preventDefault();
       
         const messageBox = document.getElementById('message');
-        console.log('Sales clicked');
       
         $.ajax({
           url: 'sales_actions.php',
@@ -28,4 +25,28 @@ $(document).ready(function() {
           }
         });
       });  
+
+      $(document).on('click', '#load-sales', function () {
+        const selectedDate = $('#sales-date').val();
+        const messageBox = $('#message');
+      
+        if (!selectedDate) {
+          messageBox.html('<div class="alert alert-warning">Please select a date first.</div>');
+          return;
+        }
+        //console.log('AJAX error:', selectedDate);
+        $.ajax({
+          url: 'sales_actions.php',
+          type: 'POST',
+          data: { selected_date: selectedDate },
+          success: function (response) {
+            $('#content-area').html(response);
+            messageBox.html('');
+          },
+          error: function (xhr, status, error) {
+            messageBox.html(`<div class="alert alert-danger">Error: ${error}</div>`);
+          }
+        });
+      });
+      
 });

@@ -38,6 +38,7 @@ require_once 'db.php';
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
 
   </head>
   <body data-loggedin="<?php echo isset($_SESSION['user_id']) ? 'true' : 'false'; ?>">
@@ -687,6 +688,7 @@ require_once 'db.php';
     <script src="js/plugins.js"></script>
     <script src="js/script.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- charts -->
+    <script src='https://cdn.jsdelivr.net/npm/flatpickr'></script>
     <script src="js/shoppingCart.js"></script>
     <script src="js/wishlisthandle.js"></script>
     <script src="js/loadtables.js"></script>

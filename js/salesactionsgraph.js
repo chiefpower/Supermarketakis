@@ -1,4 +1,4 @@
-$(document).on('click', '#sales-actions', function (e) {
+$(document).on('click', '#graph-actions', function (e) {
   e.preventDefault();
 
   const messageBox = document.getElementById('message-box');

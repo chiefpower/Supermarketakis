@@ -691,5 +691,6 @@ require_once 'db.php';
     <script src="js/wishlisthandle.js"></script>
     <script src="js/loadtables.js"></script>
     <script src="js/salesactions.js"></script>
+    <script src="js/salesactionsgraph.js"></script>
   </body>
 </html>

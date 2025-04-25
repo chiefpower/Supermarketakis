@@ -156,30 +156,58 @@ function processOrderReductions($conn) {
 
 // Main logic
 try {
-    echo '<div class="banner-ad large bg-info block-1 p-4" id="content-area" style="min-height: 20rem; max-height: 80vh; max-width: 100%; overflow: auto;">';
+    echo '<div class="container-fluid p-4" id="content-area" style="min-height: 20rem; max-height: 80vh;">';
 
     // Total Sales
     $total_sales = getTotalSales($conn);
-    echo "<h5 class='text-black'>Total Sales for All Stores: $" . number_format((float)$total_sales, 2) . "</h5>";
+    echo '
+      <div class="card mb-4 shadow">
+        <div class="card-body bg-light">
+          <h5 class="card-title text-primary">Total Sales for All Stores</h5>
+          <p class="card-text display-6 fw-bold text-dark">$' . number_format((float)$total_sales, 2) . '</p>
+        </div>
+      </div>
+    ';
 
     // Sales Per Store
     $sales_per_store = getSalesPerStore($conn);
-    echo "<h5 class='text-black'>Sales per Store:</h5>";
+    echo '
+      <div class="card mb-4 shadow">
+        <div class="card-body">
+          <h5 class="card-title text-primary">Sales per Store</h5>
+    ';
+
     if (empty($sales_per_store)) {
-        echo "<p class='text-black'>No sales data found per store.</p>";
+        echo '<p class="text-muted">No sales data found per store.</p>';
     } else {
+        echo '<ul class="list-group list-group-flush">';
         foreach ($sales_per_store as $store) {
-            echo "<p class='text-black'>Store: {$store['store_name']} (ID: {$store['store_id']}) - Sales: $" . number_format((float)$store['store_sales'], 2) . "</p>";
+            echo '
+              <li class="list-group-item d-flex justify-content-between align-items-center">
+                <strong>' . htmlspecialchars($store['store_name']) . ' (ID: ' . $store['store_id'] . ')</strong>
+                <span class="badge bg-success fs-6">$' . number_format((float)$store['store_sales'], 2) . '</span>
+              </li>';
         }
+        echo '</ul>';
     }
 
-    // Reduce Inventory
-    echo "<h5 class='text-black'>Inventory Reductions:</h5>";
+    echo '</div></div>';
+
+    // Inventory Reductions
+    echo '
+      <div class="card shadow">
+        <div class="card-body">
+          <h5 class="card-title text-primary">Inventory Reductions</h5>
+    ';
     processOrderReductions($conn);
+    echo '
+        </div>
+      </div>
+    ';
 
     echo '</div>';
 } catch (Exception $e) {
-    echo "<p class='text-danger'>Fatal error: " . $e->getMessage() . "</p>";
+    echo "<div class='alert alert-danger'>Fatal error: " . $e->getMessage() . "</div>";
 }
 
 $conn->close();

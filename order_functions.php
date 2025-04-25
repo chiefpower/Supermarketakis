@@ -3,7 +3,7 @@ function createGuestOrderWithItems(PDO $pdo, array $userData, array $orderItems,
     try {
         // Start transaction
         $pdo->beginTransaction();
-        file_put_contents('debug_post.txt', print_r( $userData, true));
+       // file_put_contents('debug_post.txt', print_r( $userData, true));
         // 1. Create a guest user
         $randomSuffix = str_pad(rand(0, 99999), 5, '0', STR_PAD_LEFT);
         $guestUsername = 'guest_' . $randomSuffix;

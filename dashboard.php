@@ -257,8 +257,8 @@ require_once 'db.php';
                     <li class="nav-item active">
                       <a href="#tables" class="nav-link" id="load-tables">Tables</a>
                     </li>
-                    <li class="nav-item dropdown">
-                      <a href="sales_actions.php" class="nav-link">Sales</a>
+                    <li class="nav-item active">
+                      <a href="#sales" class="nav-link" id="sales-actions">Sales</a>
                     </li>
                     <li class="nav-item">
                       <a href="#kids" class="nav-link">Orders</a>
@@ -686,8 +686,10 @@ require_once 'db.php';
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha3/dist/js/bootstrap.bundle.min.js" integrity="sha384-ENjdO4Dr2bkBIFxQpeoTz1HIcje39Wm4jDKdf19U8gI4ddQ3GYNS7NTKfAdVQSZe" crossorigin="anonymous"></script>
     <script src="js/plugins.js"></script>
     <script src="js/script.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script> <!-- charts -->
     <script src="js/shoppingCart.js"></script>
     <script src="js/wishlisthandle.js"></script>
     <script src="js/loadtables.js"></script>
+    <script src="js/salesactions.js"></script>
   </body>
 </html>

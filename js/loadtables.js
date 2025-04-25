@@ -239,9 +239,6 @@ $(document).ready(function() {
       const table = $(this).data('table');
       const ids = JSON.parse(this.dataset.ids);  
       
-    //  messageBox.innerHTML = ""; 
-     // const ids = JSON.parse($(this).data('ids'));
-
     // console.log("Table: ", table);
     //  console.log("IDs: ", ids);
     
@@ -267,7 +264,7 @@ $(document).ready(function() {
     });
 
     function loadTables() { 
-        $('#content-area').html('<p class="text-white">Loading tables...</p>');
+        $('#content-area').html('<p class="text-black">Loading tables...</p>');
       
         $.ajax({
           url: 'load_tables.php',

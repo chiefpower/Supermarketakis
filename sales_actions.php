@@ -144,10 +144,10 @@ function getStoreName($conn, $store_id) {
 function processOrderReductions($conn, $selectedDate) {
     try {
         // Check if the reduction has already been processed for this date
-        if (reductionAlreadyRun($conn, $selectedDate)) {
-            echo "<p class='text-black'>Inventory reduction already processed for " . htmlspecialchars($selectedDate) . "</p>";
-            return;
-        }
+    //    if (reductionAlreadyRun($conn, $selectedDate)) {
+    //        echo "<p class='text-black'>Inventory reduction already processed for " . htmlspecialchars($selectedDate) . "</p>";
+     //       return;
+   //     }
 
         // Start a transaction to ensure that either all reductions are processed or none
         $conn->begin_transaction();
@@ -199,9 +199,41 @@ function processOrderReductions($conn, $selectedDate) {
                     WHERE store_id = ? AND product_id = ? AND quantity >= ?
                 ");
                 $update->bind_param("iiii", $quantity_to_reduce, $store_id, $product_id, $quantity_to_reduce);
-                $update->execute();
-                $update->close();
-
+            
+                if ($update->execute()) {
+                    $update->close();
+            
+                    // Get the warehouse ID for the store
+                    $warehouse_id = null;
+                    $stmt = $conn->prepare("SELECT warehouse_id FROM stores WHERE store_id = ?");
+                    $stmt->bind_param("i", $store_id);
+                    $stmt->execute();
+                    $stmt->bind_result($warehouse_id);
+                    $stmt->fetch();
+                    $stmt->close();
+            
+                    if ($warehouse_id !== null) {
+                        // Call for store
+                        $sourceType = 'store';
+                        $stmt = mysqli_prepare($conn, "CALL PlaceOrderForLowInventory(?, ?, ?)");
+                        mysqli_stmt_bind_param($stmt, "iis", $product_id, $store_id, $sourceType);
+                        mysqli_stmt_execute($stmt);
+                        mysqli_stmt_close($stmt);
+            
+                        // Call for warehouse
+                        $sourceType = 'warehouse';
+                        $stmt = mysqli_prepare($conn, "CALL PlaceOrderForLowInventory(?, ?, ?)");
+                        mysqli_stmt_bind_param($stmt, "iis", $product_id, $warehouse_id, $sourceType);
+                        mysqli_stmt_execute($stmt);
+                        mysqli_stmt_close($stmt);
+                    } else {
+                        echo "<p class='text-danger'>Warehouse ID not found for Store ID $store_id.</p>";
+                    }
+                } else {
+                    echo "<p class='text-danger'>Inventory update failed: " . $update->error . "</p>";
+                    $update->close();
+                }
+            
                 // Echo result
                 echo "<p class='text-black'>Reduced quantity (Old Quantity: $old_quantity) for Product '$product_name' in Store '$store_name' by $quantity_to_reduce.</p>";
 
@@ -213,7 +245,7 @@ function processOrderReductions($conn, $selectedDate) {
         }
 
         // If reductions were performed, insert the reduction entry
-        if ($reductionsPerformed) {
+        if (!$reductionsPerformed) {
             $stmt = $conn->prepare("INSERT INTO inventory_reductions (reduction_date) VALUES (?)");
             $stmt->bind_param("s", $selectedDate);
             $stmt->execute();

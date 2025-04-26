@@ -1,0 +1,17 @@
+$query = "SELECT TRIGGER_NAME, EVENT_MANIPULATION, EVENT_OBJECT_TABLE, ACTION_STATEMENT, ACTION_TIMING 
+          FROM information_schema.TRIGGERS 
+          WHERE TRIGGER_SCHEMA = 'your_database_name'";
+
+$result = $conn->query($query);
+
+if ($result->num_rows > 0) {
+    while ($row = $result->fetch_assoc()) {
+        echo "<strong>Trigger:</strong> " . $row['TRIGGER_NAME'] . "<br>";
+        echo "Table: " . $row['EVENT_OBJECT_TABLE'] . "<br>";
+        echo "Event: " . $row['EVENT_MANIPULATION'] . "<br>";
+        echo "Timing: " . $row['ACTION_TIMING'] . "<br>";
+        echo "Action: <pre>" . htmlspecialchars($row['ACTION_STATEMENT']) . "</pre><hr>";
+    }
+} else {
+    echo "No triggers found.";
+}

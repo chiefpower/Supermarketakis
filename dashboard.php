@@ -261,8 +261,8 @@ require_once 'db.php';
                     <li class="nav-item active">
                       <a href="#sales" class="nav-link" id="sales-actions">Sales</a>
                     </li>
-                    <li class="nav-item">
-                      <a href="#kids" class="nav-link">Orders</a>
+                    <li class="nav-item active">
+                      <a href="#functions" class="nav-link" id="functions-act">Functions</a>
                     </li>
                     <li class="nav-item">
                       <a href="#accessories" class="nav-link">User orders</a>
@@ -694,5 +694,6 @@ require_once 'db.php';
     <script src="js/loadtables.js"></script>
     <script src="js/salesactions.js"></script>
     <script src="js/salesactionsgraph.js"></script>
+    <script src="js/functionactions.js"></script>
   </body>
 </html>

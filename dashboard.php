@@ -114,7 +114,7 @@ require_once 'db.php';
               <strong id="cart-total">€0</strong>
             </li>
           </ul>
-          <a href="checkout.html" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
+          <a href="pcheckout.html" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
           
         </div>
       </div>
@@ -252,8 +252,6 @@ require_once 'db.php';
 
                 <div class="offcanvas-body">
               
-                  
-              
                   <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
                     <li class="nav-item active">
                       <a href="#tables" class="nav-link" id="load-tables">Tables</a>
@@ -263,35 +261,6 @@ require_once 'db.php';
                     </li>
                     <li class="nav-item active">
                       <a href="#functions" class="nav-link" id="functions-act">Functions</a>
-                    </li>
-                    <li class="nav-item">
-                      <a href="#accessories" class="nav-link">User orders</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                      <a class="nav-link dropdown-toggle" role="button" id="pages" data-bs-toggle="dropdown" aria-expanded="false">Stores</a>
-                      <ul class="dropdown-menu" aria-labelledby="pages">
-                        <li><a href="#tsian02" class="dropdown-item">About Us </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Shop </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Single Product </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Cart </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Checkout </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Blog </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Single Post </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Styles </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Contact </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">Thank You </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">My Account </a></li>
-                        <li><a href="#tsian02" class="dropdown-item">404 Error </a></li>
-                      </ul>
-                    </li>
-                    <li class="nav-item">
-                      <a href="#brand" class="nav-link">Store inventory</a>
-                    </li>
-                    <li class="nav-item">
-                      <a href="#sale" class="nav-link">Warehouses</a>
-                    </li>
-                    <li class="nav-item">
-                      <a href="#blog" class="nav-link">Products</a>
                     </li>
                   </ul>
                 
@@ -539,30 +508,6 @@ require_once 'db.php';
 
           </div>
         </div>
-      </div>
-    </section>
-
-    <section class="py-5">
-      <div class="container-fluid">
-        <h2 class="my-5">People are also looking for</h2>
-        <a href="#" class="btn btn-warning me-2 mb-2">Blue diamon almonds</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Angie’s Boomchickapop Corn</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Salty kettle Corn</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Chobani Greek Yogurt</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Sweet Vanilla Yogurt</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Foster Farms Takeout Crispy wings</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Warrior Blend Organic</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Chao Cheese Creamy</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Chicken meatballs</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Blue diamon almonds</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Angie’s Boomchickapop Corn</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Salty kettle Corn</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Chobani Greek Yogurt</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Sweet Vanilla Yogurt</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Foster Farms Takeout Crispy wings</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Warrior Blend Organic</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Chao Cheese Creamy</a>
-        <a href="#" class="btn btn-warning me-2 mb-2">Chicken meatballs</a>
       </div>
     </section>
 

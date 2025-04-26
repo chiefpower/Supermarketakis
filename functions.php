@@ -2,7 +2,15 @@
 // Database connection
 include 'db.php'; 
 
-function fetchLowInventoryAlerts($conn) {
+if (isset($_GET['low_inv'])) {
+   // file_put_contents('debug_postres.txt', print_r(  $result, true));
+    fetchLowInventoryAlerts($conn);
+   // exit; // important: stop rest of page from loading
+}else{
+    renderDashboardFunctions();
+}
+
+function fetchLowInventoryAlerts($conn) {                 
     // Query to fetch low inventory alerts from the database
     $sql = "SELECT 
                 lia.alert_id,
@@ -21,7 +29,7 @@ function fetchLowInventoryAlerts($conn) {
                 lia.alert_date DESC";
 
     $result = $conn->query($sql);
-    file_put_contents('debug_postres.txt', print_r(  $result, true));
+   //file_put_contents('debug_postres.txt', print_r(  $result, true));
     if ($result->num_rows > 0) {
         // Display products that are below the minimum quantity
         while ($row = $result->fetch_assoc()) {
@@ -31,8 +39,10 @@ function fetchLowInventoryAlerts($conn) {
             $current_quantity = $row['current_quantity'];
             $minimum_quantity = $row['minimum_quantity'];
             $alert_date = $row['alert_date'];
-
-            echo "<tr>
+             
+            echo "<div class='card mb-4 shadow'>
+            <div class='card-body'>
+                  <tr>
                     <td>$product_id</td>
                     <td>$warehouse_id</td>
                     <td>$current_quantity</td>
@@ -45,11 +55,37 @@ function fetchLowInventoryAlerts($conn) {
                         </form>
                     </td>
                   </tr>";
-            
+
+                  
+            echo "</div></div>";         
+           
         }
     } else {
         echo "<tr><td colspan='6'>No low inventory alerts found.</td></tr>";
     }
 }
-fetchLowInventoryAlerts($conn);
+
+function renderDashboardFunctions() {
+    try {
+        echo '
+        <div class="card mb-4 shadow">
+            <div class="card-body">
+                
+                <h4 class="mb-4">Available Functions</h4>
+                <div class="d-flex flex-column flex-sm-row gap-3 mb-3">
+                    <button class="btn btn-primary" id="show-orders">Display Orders</button>
+                    <button class="btn btn-primary" id="show-procedures">Display Stored Procedures</button>
+                    <button class="btn btn-primary" id="show-triggers">Display Triggers</button>
+                    <a href="#" class="btn btn-primary" id="show-low-inv-alerts">Low Inventory Alerts</a>
+                </div>
+                
+                <div id="function-result" class="mt-3"></div>
+            </div>
+        </div>';
+    } catch (Exception $e) {
+        echo "<div class='alert alert-danger'>Fatal error: " . $e->getMessage() . "</div>";
+    }
+}
+
+$conn->close();
 ?>

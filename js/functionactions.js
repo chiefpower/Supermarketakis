@@ -9,7 +9,7 @@ $(document).ready(function() {
           url: 'functions.php',
           type: 'GET',
           success: function (response) {
-            console.log('AJAXsssss:', response);
+            //console.log('AJAXsssss:', response);
             // Just inject the returned HTML
             $('#content-area').html(response);
       
@@ -26,5 +26,39 @@ $(document).ready(function() {
           }
         });
       });  
+
+      $(document).on('click', '#show-orders', function () {
+        $('#function-result').load('load_orders.php');
+        //console.log('AJAXsssss:');
+      });
       
+      $(document).on('click', '#show-procedures', function () {
+        $('#function-result').load('load_procedures.php');
+      });
+      
+      $(document).on('click', '#show-triggers', function () {
+        $('#function-result').load('load_triggers.php');
+      });
+
+      $(document).on('click', '#show-low-inv-alerts', function () {
+       // $('#function-result').load('load_alerts.php');
+       //console.log('AJAX111sssss:');
+       $('#function-result').load('functions.php?low_inv=1');
+      });
+      
+      $(document).on('click', '#show-stor-proc', function () {
+        const procName = $(this).data('name');
+        $('#function-result').load('load_procedures.php?view=' + encodeURIComponent(procName));
+      });
+
+      $(document).on('click', '#edit-stor-proc', function () {
+        const procName = $(this).data('name');
+        $('#function-result').load('load_procedures.php?edit=' + encodeURIComponent(procName));
+      });
+
+      $(document).on('click', '#cancel-edit-proc', function () {
+        const procName = $(this).data('name');
+        $('#function-result').load('load_procedures.php');
+      });
+
 });

@@ -15,3 +15,720 @@ if ($result->num_rows > 0) {
 } else {
     echo "No triggers found.";
 }
+
+after_order_insert	orders	INSERT	AFTER	BEGIN CALL handle_order( NEW.product_id, NEW.quantity, NEW.warehouse_id, NEW.source_id, NEW.source_type ); END
+
+DROP TRIGGER IF EXISTS trg_after_insert_orders;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_after_insert_orders
+AFTER INSERT ON orders
+FOR EACH ROW
+BEGIN
+    -- Call the new version of handle_order with is_auto_triggered = TRUE
+    CALL handle_order(
+        NEW.product_id,
+        NEW.quantity,
+        NEW.warehouse_id,
+        NEW.source_id,
+        NEW.source_type,
+        TRUE  -- This prevents recursion
+    );
+END$$
+
+DELIMITER ;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_after_insert_backorder
+AFTER INSERT ON backorder_requests
+FOR EACH ROW
+BEGIN
+    -- If the status of the new order is not 'confirmed', place a backorder request
+    IF NEW.status = 'pending' THEN
+        -- Call the PlaceBackOrderRequest procedure
+        CALL PlaceBackOrderRequest(NEW.product_id, NEW.warehouse_id);
+    END IF;
+END$$
+
+DELIMITER ;
+
+BEGIN
+    DECLARE order_count INT;
+    DECLARE backorder_exists INT;
+
+    -- Check if there is an existing confirmed order for this product and warehouse
+    SELECT COUNT(*) INTO order_count
+    FROM orders
+    WHERE product_id = p_product_id
+    AND warehouse_id = p_warehouse_id
+    AND status = 'confirmed';
+
+    -- If no confirmed order exists, place a backorder
+    IF order_count != 0 THEN
+        -- Call the PlaceOrderForLowInventory procedure to create a new order
+        CALL PlaceOrderForLowInventory(p_product_id, p_warehouse_id, 'warehouse');
+        
+        -- Check if a backorder request already exists
+        SELECT COUNT(*) INTO backorder_exists
+        FROM backorder_requests
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id AND status = 'pending';
+
+        -- If a backorder request exists, update the status to 'ordered'
+        IF backorder_exists > 0 THEN
+            UPDATE backorder_requests
+            SET status = 'ordered', order_date = NOW()
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id AND status = 'pending';
+        END IF;
+    ELSE
+        -- add a log or handle other business logic for confirmed orders
+        SELECT 'Order already confirmed for this product and warehouse' AS message;
+    END IF;
+END
+---------------------------------------------------------------------v1
+DELIMITER $$
+
+CREATE PROCEDURE handle_store_order (
+  IN p_product_id INT,
+  IN p_quantity INT,
+  IN p_warehouse_id INT,
+  IN p_store_id INT
+)
+BEGIN
+    DECLARE current_qty INT;
+
+    -- Step 1: Get current quantity from the warehouse
+    SELECT quantity INTO current_qty
+    FROM warehouse_inventory
+    WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+    -- Step 2: If not enough quantity, raise an error
+    IF current_qty IS NULL THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product not found in specified warehouse';
+    ELSEIF current_qty < p_quantity THEN
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient stock in warehouse';
+    END IF;
+
+    -- Step 1: Check if the product exists in warehouse_inventory
+    IF EXISTS (
+        SELECT 1 FROM warehouse_inventory
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id
+    ) THEN
+        -- Reduce quantity from warehouse
+        UPDATE warehouse_inventory
+        SET quantity = quantity - p_quantity
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+    ELSE
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product not found in specified warehouse';
+    END IF;
+
+    -- Step 2: Add quantity to store_inventory (insert if not exists)
+    IF EXISTS (
+        SELECT 1 FROM store_inventory
+        WHERE product_id = p_product_id AND store_id = p_store_id
+    ) THEN
+        -- Update existing quantity
+        UPDATE store_inventory
+        SET quantity = quantity + p_quantity
+        WHERE product_id = p_product_id AND store_id = p_store_id;
+    ELSE
+        -- Insert new inventory record
+        INSERT INTO store_inventory (product_id, store_id, quantity)
+        VALUES (p_product_id, p_store_id, p_quantity);
+    END IF;
+END$$
+
+DELIMITER ;
+------------------------------------------------------------------v2
+DELIMITER $$
+
+CREATE PROCEDURE handle_order (
+  IN p_product_id INT,
+  IN p_quantity INT,
+  IN p_warehouse_id INT,
+  IN p_source_id INT,
+  IN p_source_type ENUM('warehouse', 'store')
+)
+BEGIN
+    DECLARE current_qty INT;
+
+    IF p_source_type = 'store' THEN
+        -- 🔍 Validate and subtract from warehouse
+        SELECT quantity INTO current_qty
+        FROM warehouse_inventory
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        IF current_qty IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product not found in warehouse';
+        ELSEIF current_qty < p_quantity THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient warehouse stock';
+        END IF;
+
+        UPDATE warehouse_inventory
+        SET quantity = quantity - p_quantity
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        -- 📝 Log the OUT transaction from warehouse
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, store_id,
+            source_type, transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, p_source_id,
+            'store', 'OUT', CONCAT('Transfer to store ', p_source_id)
+        );
+
+        -- ➕ Add to store inventory
+        IF EXISTS (
+            SELECT 1 FROM store_inventory
+            WHERE product_id = p_product_id AND store_id = p_source_id
+        ) THEN
+            UPDATE store_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND store_id = p_source_id;
+        ELSE
+            INSERT INTO store_inventory (product_id, store_id, quantity)
+            VALUES (p_product_id, p_source_id, p_quantity);
+        END IF;
+
+        -- 📝 Log the IN transaction to store
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, store_id,
+            source_type, transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, p_source_id,
+            'store', 'IN', CONCAT('Received from warehouse ', p_warehouse_id)
+        );
+
+    ELSEIF p_source_type = 'warehouse' THEN
+        -- ➕ Add to warehouse inventory
+        IF EXISTS (
+            SELECT 1 FROM warehouse_inventory
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id
+        ) THEN
+            UPDATE warehouse_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+        ELSE
+            INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity)
+            VALUES (p_product_id, p_warehouse_id, p_quantity);
+        END IF;
+
+        -- 📝 Log the IN transaction from supplier
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, source_type,
+            transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, 'warehouse',
+            'IN', CONCAT('Received from supplier (order source ID ', p_source_id, ')')
+        );
+    END IF;
+END$$
+
+DELIMITER ;
+-------------------------------------------------------------v3 with price
+DELIMITER $$
+
+CREATE PROCEDURE handle_order (
+  IN p_product_id INT,
+  IN p_quantity INT,
+  IN p_warehouse_id INT,
+  IN p_source_id INT,
+  IN p_source_type ENUM('warehouse', 'store')
+)
+BEGIN
+    DECLARE current_qty INT;
+    DECLARE current_price DECIMAL(10,2);
+    DECLARE product_price DECIMAL(10,2);
+
+    -- Retrieve the price from the products table
+    SELECT price INTO product_price
+    FROM products
+    WHERE product_id = p_product_id;
+
+    IF p_source_type = 'store' THEN
+        -- Validate and subtract from warehouse
+        SELECT quantity INTO current_qty
+        FROM warehouse_inventory
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        IF current_qty IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product not found in warehouse';
+        ELSEIF current_qty < p_quantity THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Insufficient warehouse stock';
+        END IF;
+
+        UPDATE warehouse_inventory
+        SET quantity = quantity - p_quantity
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        -- Log the OUT transaction from warehouse
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, store_id,
+            source_type, transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, p_source_id,
+            'store', 'OUT', CONCAT('Transfer to store ', p_source_id)
+        );
+
+        -- Update or insert into store inventory
+        IF EXISTS (
+            SELECT 1 FROM store_inventory
+            WHERE product_id = p_product_id AND store_id = p_source_id
+        ) THEN
+            UPDATE store_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND store_id = p_source_id;
+        ELSE
+            INSERT INTO store_inventory (product_id, store_id, quantity)
+            VALUES (p_product_id, p_source_id, p_quantity);
+        END IF;
+
+        -- Log the IN transaction to store
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, store_id,
+            source_type, transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, p_source_id,
+            'store', 'IN', CONCAT('Received from warehouse ', p_warehouse_id)
+        );
+
+    ELSEIF p_source_type = 'warehouse' THEN
+        -- Check if the price in the order is different from the price in the products table
+        SELECT price INTO current_price
+        FROM orders
+        WHERE order_id = NEW.order_id AND product_id = p_product_id;
+
+        -- If prices don't match, update the price in the products table
+        IF current_price != product_price THEN
+            UPDATE products
+            SET price = current_price
+            WHERE product_id = p_product_id;
+        END IF;
+
+        -- Add to warehouse inventory
+        IF EXISTS (
+            SELECT 1 FROM warehouse_inventory
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id
+        ) THEN
+            UPDATE warehouse_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+        ELSE
+            INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity, price)
+            VALUES (p_product_id, p_warehouse_id, p_quantity, current_price);
+        END IF;
+
+        -- Log the IN transaction from supplier
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, source_type,
+            transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, 'warehouse',
+            'IN', CONCAT('Received from supplier (order source ID ', p_source_id, ')')
+        );
+    END IF;
+END$$
+
+DELIMITER ;
+------------------------------------------------------------v4 warehouse noot enough products
+BEGIN
+    DECLARE current_qty INT;
+    DECLARE current_price DECIMAL(10,2);
+    DECLARE product_price DECIMAL(10,2);
+    DECLARE v_message TEXT;
+
+    -- Retrieve the price from the products table
+    SELECT price INTO product_price
+    FROM products
+    WHERE product_id = p_product_id;
+
+    IF p_source_type = 'store' THEN
+        -- Validate and subtract from warehouse
+        SELECT quantity INTO current_qty
+        FROM warehouse_inventory
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        IF current_qty IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product not found in warehouse';
+        ELSEIF current_qty < p_quantity THEN
+            -- Move only available stock
+            UPDATE warehouse_inventory
+            SET quantity = quantity - current_qty
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+            -- Log partial OUT transaction
+            INSERT INTO inventory_transactions (
+                product_id, quantity, warehouse_id, store_id,
+                source_type, transaction_type, notes
+            ) VALUES (
+                p_product_id, current_qty, p_warehouse_id, p_source_id,
+                'store', 'OUT', CONCAT('Partial transfer to store ', p_source_id)
+            );
+
+            -- Update store inventory
+            IF EXISTS (
+                SELECT 1 FROM store_inventory
+                WHERE product_id = p_product_id AND store_id = p_source_id
+            ) THEN
+                UPDATE store_inventory
+                SET quantity = quantity + current_qty
+                WHERE product_id = p_product_id AND store_id = p_source_id;
+            ELSE
+                INSERT INTO store_inventory (product_id, store_id, quantity)
+                VALUES (p_product_id, p_source_id, current_qty);
+            END IF;
+
+            -- Log the IN transaction to store
+            INSERT INTO inventory_transactions (
+                product_id, quantity, warehouse_id, store_id,
+                source_type, transaction_type, notes
+            ) VALUES (
+                p_product_id, current_qty, p_warehouse_id, p_source_id,
+                'store', 'IN', CONCAT('Partially received from warehouse ', p_warehouse_id)
+            );
+
+            -- Insert into backorder_requests
+            INSERT INTO backorder_requests (
+                product_id, warehouse_id, store_id, requested_qty,
+                fulfilled_qty, shortfall_qty, request_type, notes
+            ) VALUES (
+                p_product_id, p_warehouse_id, p_source_id,
+                p_quantity, current_qty, p_quantity - current_qty,
+                'store', 'Auto-generated from order shortfall'
+            );
+
+            -- Call reorder logic
+            CALL PlaceOrderForLowInventory(p_product_id, p_warehouse_id, 'warehouse');
+
+            SET v_message = CONCAT(
+                'Shortfall: only ', current_qty,
+                ' moved. Backorder logged and reorder triggered.'
+            );
+            -- Raise info-level signal
+            SIGNAL SQLSTATE '01000'
+            SET MESSAGE_TEXT = v_message;
+
+        END IF;
+
+        UPDATE warehouse_inventory
+        SET quantity = quantity - p_quantity
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        -- Log the OUT transaction from warehouse
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, store_id,
+            source_type, transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, p_source_id,
+            'store', 'OUT', CONCAT('Transfer to store ', p_source_id)
+        );
+
+        -- Update or insert into store inventory
+        IF EXISTS (
+            SELECT 1 FROM store_inventory
+            WHERE product_id = p_product_id AND store_id = p_source_id
+        ) THEN
+            UPDATE store_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND store_id = p_source_id;
+        ELSE
+            INSERT INTO store_inventory (product_id, store_id, quantity)
+            VALUES (p_product_id, p_source_id, p_quantity);
+        END IF;
+
+        -- Log the IN transaction to store
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, store_id,
+            source_type, transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, p_source_id,
+            'store', 'IN', CONCAT('Received from warehouse ', p_warehouse_id)
+        );
+
+    ELSEIF p_source_type = 'warehouse' THEN
+        -- Check if the price in the order is different from the price in the products table
+        SELECT price INTO current_price
+        FROM orders
+        WHERE order_id = NEW.order_id AND product_id = p_product_id;
+
+        -- If prices don't match, update the price in the products table
+        IF current_price != product_price THEN
+            UPDATE products
+            SET price = current_price
+            WHERE product_id = p_product_id;
+        END IF;
+
+        -- Add to warehouse inventory
+        IF EXISTS (
+            SELECT 1 FROM warehouse_inventory
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id
+        ) THEN
+            UPDATE warehouse_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+        ELSE
+            INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity, price)
+            VALUES (p_product_id, p_warehouse_id, p_quantity, current_price);
+        END IF;
+
+        -- Log the IN transaction from supplier
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, source_type,
+            transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, 'warehouse',
+            'IN', CONCAT('Received from supplier (order source ID ', p_source_id, ')')
+        );
+    END IF;
+END
+----------------------------------------------------v5 no recursion
+DELIMITER $$
+
+CREATE PROCEDURE handle_order (
+  IN p_product_id INT,
+  IN p_quantity INT,
+  IN p_warehouse_id INT,
+  IN p_source_id INT,
+  IN p_source_type ENUM('warehouse', 'store'),
+  IN is_auto_triggered BOOLEAN
+)
+BEGIN
+    DECLARE current_qty INT;
+    DECLARE current_price DECIMAL(10,2);
+    DECLARE product_price DECIMAL(10,2);
+    DECLARE v_message TEXT;
+
+    -- Retrieve the price from the products table
+    SELECT price INTO product_price
+    FROM products
+    WHERE product_id = p_product_id;
+
+    IF p_source_type = 'store' THEN
+
+        -- Get current warehouse quantity
+        SELECT quantity INTO current_qty
+        FROM warehouse_inventory
+        WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+        -- Product not found
+        IF current_qty IS NULL THEN
+            SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Product not found in warehouse';
+        
+        -- Not enough in stock — move what you can
+        ELSEIF current_qty < p_quantity THEN
+
+            -- Move only available stock
+            UPDATE warehouse_inventory
+            SET quantity = quantity - current_qty
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+            -- Log partial OUT from warehouse
+            INSERT INTO inventory_transactions (
+                product_id, quantity, warehouse_id, store_id,
+                source_type, transaction_type, notes
+            ) VALUES (
+                p_product_id, current_qty, p_warehouse_id, p_source_id,
+                'store', 'OUT', CONCAT('Partial transfer to store ', p_source_id)
+            );
+
+            -- Update or insert store inventory
+            IF EXISTS (
+                SELECT 1 FROM store_inventory
+                WHERE product_id = p_product_id AND store_id = p_source_id
+            ) THEN
+                UPDATE store_inventory
+                SET quantity = quantity + current_qty
+                WHERE product_id = p_product_id AND store_id = p_source_id;
+            ELSE
+                INSERT INTO store_inventory (product_id, store_id, quantity)
+                VALUES (p_product_id, p_source_id, current_qty);
+            END IF;
+
+            -- Log partial IN to store
+            INSERT INTO inventory_transactions (
+                product_id, quantity, warehouse_id, store_id,
+                source_type, transaction_type, notes
+            ) VALUES (
+                p_product_id, current_qty, p_warehouse_id, p_source_id,
+                'store', 'IN', CONCAT('Partially received from warehouse ', p_warehouse_id)
+            );
+
+            -- Backorder shortfall
+            INSERT INTO backorder_requests (
+                product_id, warehouse_id, store_id, requested_qty,
+                fulfilled_qty, shortfall_qty, request_type, notes
+            ) VALUES (
+                p_product_id, p_warehouse_id, p_source_id,
+                p_quantity, current_qty, p_quantity - current_qty,
+                'store', 'Auto-created from store order shortfall'
+            );
+
+            -- Call reorder procedure if not auto-triggered
+            IF NOT is_auto_triggered THEN
+                CALL PlaceOrderForLowInventory(p_product_id, p_warehouse_id, 'warehouse');
+            END IF;
+
+            -- Raise a warning with shortfall
+            SET v_message = CONCAT(
+                'Shortfall: only ', current_qty,
+                ' moved to store. Remaining ', p_quantity - current_qty,
+                ' pending and reorder triggered.'
+            );
+            SIGNAL SQLSTATE '01000' SET MESSAGE_TEXT = v_message;
+
+        ELSE
+            -- Full stock available, proceed normally
+            UPDATE warehouse_inventory
+            SET quantity = quantity - p_quantity
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+            -- Log full OUT from warehouse
+            INSERT INTO inventory_transactions (
+                product_id, quantity, warehouse_id, store_id,
+                source_type, transaction_type, notes
+            ) VALUES (
+                p_product_id, p_quantity, p_warehouse_id, p_source_id,
+                'store', 'OUT', CONCAT('Transfer to store ', p_source_id)
+            );
+
+            -- Add to store inventory
+            IF EXISTS (
+                SELECT 1 FROM store_inventory
+                WHERE product_id = p_product_id AND store_id = p_source_id
+            ) THEN
+                UPDATE store_inventory
+                SET quantity = quantity + p_quantity
+                WHERE product_id = p_product_id AND store_id = p_source_id;
+            ELSE
+                INSERT INTO store_inventory (product_id, store_id, quantity)
+                VALUES (p_product_id, p_source_id, p_quantity);
+            END IF;
+
+            -- Log full IN to store
+            INSERT INTO inventory_transactions (
+                product_id, quantity, warehouse_id, store_id,
+                source_type, transaction_type, notes
+            ) VALUES (
+                p_product_id, p_quantity, p_warehouse_id, p_source_id,
+                'store', 'IN', CONCAT('Received from warehouse ', p_warehouse_id)
+            );
+        END IF;
+
+    ELSEIF p_source_type = 'warehouse' THEN
+        -- Handle supplier -> warehouse restock
+
+        -- Check if the price in the order is different from the price in the products table
+        SELECT price INTO current_price
+        FROM orders
+        WHERE order_id = NEW.order_id AND product_id = p_product_id;
+
+        -- If prices don't match, update the price in the products table
+        IF current_price != product_price THEN
+            UPDATE products
+            SET price = current_price
+            WHERE product_id = p_product_id;
+        END IF;
+
+        -- Update or insert warehouse inventory
+        IF EXISTS (
+            SELECT 1 FROM warehouse_inventory
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id
+        ) THEN
+            UPDATE warehouse_inventory
+            SET quantity = quantity + p_quantity
+            WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+        ELSE
+            INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity)
+            VALUES (p_product_id, p_warehouse_id, p_quantity);
+        END IF;
+
+        -- Log IN from supplier
+        INSERT INTO inventory_transactions (
+            product_id, quantity, warehouse_id, source_type,
+            transaction_type, notes
+        ) VALUES (
+            p_product_id, p_quantity, p_warehouse_id, 'warehouse',
+            'IN', CONCAT('Received from supplier (source ID ', p_source_id, ')')
+        );
+    END IF;
+END$$
+
+DELIMITER ;
+---------------------------------------------------------------------v6 
+ CALL UpdateWarehouseInventoryAndHandleBackorders(p_product_id,  p_quantity, warehouse_id);
+DELIMITER $$
+
+CREATE PROCEDURE UpdateWarehouseInventoryAndHandleBackorders (
+    IN p_product_id INT,
+    IN p_quantity INT,
+    IN p_warehouse_id INT
+)
+BEGIN
+    DECLARE affected_rows INT;
+    DECLARE backorder_exists INT;
+    DECLARE backorder_qty INT;
+
+    -- First, update the warehouse inventory with the new quantity
+    UPDATE warehouse_inventory
+    SET quantity = quantity + p_quantity
+    WHERE product_id = p_product_id AND warehouse_id = p_warehouse_id;
+
+    -- Check if the update was successful by checking affected rows
+    GET DIAGNOSTICS affected_rows = ROW_COUNT();
+
+    IF affected_rows > 0 THEN
+        -- Check if there are any backorder requests for this product and warehouse with status 'ordered'
+        SELECT COUNT(*) INTO backorder_exists
+        FROM backorder_requests
+        WHERE product_id = p_product_id
+        AND warehouse_id = p_warehouse_id
+        AND status = 'ordered';
+
+        -- If backorder requests exist, process them
+        IF backorder_exists > 0 THEN
+            -- Get the quantity of backordered items for this product and warehouse
+            SELECT (requested_qty - fulfilled_qty) INTO backorder_qty
+            FROM backorder_requests
+            WHERE product_id = p_product_id
+            AND warehouse_id = p_warehouse_id
+            AND status = 'ordered'
+            LIMIT 1;
+
+            -- Update the store inventory with the backordered quantity
+            IF EXISTS (
+                SELECT 1 FROM store_inventory
+                WHERE product_id = p_product_id
+                AND store_id = (SELECT store_id FROM orders WHERE warehouse_id = p_warehouse_id LIMIT 1) -- Assuming an order exists for the store
+            ) THEN
+                UPDATE store_inventory
+                SET quantity = quantity + backorder_qty
+                WHERE product_id = p_product_id
+                AND store_id = (SELECT store_id FROM orders WHERE warehouse_id = p_warehouse_id LIMIT 1);
+            ELSE
+                INSERT INTO store_inventory (product_id, store_id, quantity)
+                VALUES (p_product_id, (SELECT store_id FROM orders WHERE warehouse_id = p_warehouse_id LIMIT 1), backorder_qty);
+            END IF;
+
+            -- Reduce the quantity from warehouse inventory by the backorder quantity
+            UPDATE warehouse_inventory
+            SET quantity = quantity - backorder_qty
+            WHERE product_id = p_product_id
+            AND warehouse_id = p_warehouse_id;
+
+            -- Update the backorder request status to 'fulfilled'
+            UPDATE backorder_requests
+            SET status = 'fulfilled', fulfillment_date = NOW()
+            WHERE product_id = p_product_id
+            AND warehouse_id = p_warehouse_id
+            AND status = 'ordered';
+        END IF;
+    ELSE
+        -- If the warehouse inventory update failed, raise an error
+        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Warehouse inventory update failed';
+    END IF;
+END$$
+
+DELIMITER ;
+----------------------------
+UPDATE orders SET status = 'confirmed' WHERE product_id = 4 AND source_id = 7 AND order_date = '2025-04-27' AND status = 'delivered';

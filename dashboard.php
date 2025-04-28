@@ -427,15 +427,8 @@ require_once 'db.php';
           <div class="col-md-12">
 
             <div class="section-header d-flex flex-wrap justify-content-between mb-5">
-              <h2 class="section-title">Shop by Category</h2>
-
-              <div class="d-flex align-items-center">
-                <a href="#" class="btn-link text-decoration-none">View All Categories →</a>
-                <div class="swiper-buttons">
-                  <button class="swiper-prev category-carousel-prev btn btn-yellow">❮</button>
-                  <button class="swiper-next category-carousel-next btn btn-yellow">❯</button>
-                </div>
-              </div>
+              <h2 class="section-title">All available actions</h2>
+     
             </div>
             
           </div>
@@ -476,22 +469,6 @@ require_once 'db.php';
                 </a>
                 <a href="#tsian02" class="nav-link category-item swiper-slide">
                   <img src="images/icon-bread-herb-flour.png" alt="Category Thumbnail">
-                  <h3 class="category-title">Fruits & Veges</h3>
-                </a>
-                <a href="#tsian02" class="nav-link category-item swiper-slide">
-                  <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
-                  <h3 class="category-title">Fruits & Veges</h3>
-                </a>
-                <a href="#tsian02" class="nav-link category-item swiper-slide">
-                  <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
-                  <h3 class="category-title">Fruits & Veges</h3>
-                </a>
-                <a href="#tsian02" class="nav-link category-item swiper-slide">
-                  <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
-                  <h3 class="category-title">Fruits & Veges</h3>
-                </a>
-                <a href="#tsian02" class="nav-link category-item swiper-slide">
-                  <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
                 <a href="#tsian02" class="nav-link category-item swiper-slide">

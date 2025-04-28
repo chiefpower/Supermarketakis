@@ -3,10 +3,11 @@ session_start();
 
 // Check if the user is logged in
 if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
-    // If not logged in, redirect to login page
-    header('Location: login.html');  
-    exit;
+  // If not logged in, redirect to login page
+  header('Location: login.html');  
+  exit;
 }
+require_once 'db.php';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -31,7 +32,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700&family=Open+Sans:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
 
   </head>
-  <body>
+  <body data-loggedin="<?php echo isset($_SESSION['user_id']) ? 'true' : 'false'; ?>">
 
     <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
       <defs>
@@ -98,73 +99,17 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
             <span class="text-primary">Your cart</span>
             <span id="cart-item-count" class="badge bg-primary rounded-pill">0</span>
           </h4>
-
-          <ul class="list-group mb-3" id="cart-items">
-            <li class="list-group-item d-flex justify-content-between align-items-center lh-sm" data-price="12">
-              <div>
-                <h6 class="my-0">Growers cider</h6>
-                <small class="text-body-secondary">Brief description</small>
-                <div class="mt-1">
-                  Qty: <input type="number" class="form-control form-control-sm quantity-input d-inline-block" value="1" min="1" style="width: 60px;">
-                </div>
-              </div>
-              <div class="text-end">
-                <span class="text-body-secondary d-block">$12</span>
-                <button class="btn btn-sm btn-link text-danger remove-item">🗑️</button>
-              </div>
-            </li>
+          <ul class="list-group mb-3">
             <li class="list-group-item d-flex justify-content-between">
               <span>Total (EUR)</span>
-              <strong id="cart-total">$0</strong>
+              <strong id="cart-total">€0</strong>
             </li>
           </ul>
-
-          <a href="checkout.html" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
+          <a href="pcheckout.php" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
+          
         </div>
       </div>
-      <script>
-        function calculateCartTotal() {
-          const items = document.querySelectorAll('#cart-items li[data-price]');
-          let total = 0;
-
-          items.forEach(item => {
-            const price = parseFloat(item.getAttribute('data-price')) || 0;
-            const qtyInput = item.querySelector('.quantity-input');
-            const quantity = parseInt(qtyInput?.value) || 1;
-
-            total += price * quantity;
-          });
-
-          document.getElementById('cart-total').textContent = `$${total}`;
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-          calculateCartTotal();
-
-          const cartList = document.getElementById('cart-items');
-
-          // Recalculate when quantity changes
-          cartList.addEventListener('input', function (e) {
-            if (e.target.classList.contains('quantity-input')) {
-              calculateCartTotal();
-           }
-          });
-
-          // Remove item
-          cartList.addEventListener('click', function (e) {
-            if (e.target.classList.contains('remove-item')) {
-              const item = e.target.closest('li[data-price]');
-              if (item) {
-                item.remove();
-                calculateCartTotal();
-              }
-            }
-          });
-        });
-      </script>
-
     </div>
-    <!-- / Cart </div> -->
     
     <div class="offcanvas offcanvas-end" data-bs-scroll="true" tabindex="-1" id="offcanvasSearch" aria-labelledby="Search">
       <div class="offcanvas-header justify-content-center">
@@ -175,7 +120,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
           <h4 class="d-flex justify-content-between align-items-center mb-3">
             <span class="text-primary">Search</span>
           </h4>
-          <form role="search" action="index.php" method="get" class="d-flex mt-3 gap-0">
+          <form role="search" action="home.php" method="get" class="d-flex mt-3 gap-0">
             <input class="form-control rounded-start rounded-0 bg-light" type="email" placeholder="What are you looking for?" aria-label="What are you looking for?">
             <button class="btn btn-dark rounded-end rounded-0" type="submit">Search</button>
           </form>
@@ -189,8 +134,8 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
           
           <div class="col-sm-4 col-lg-3 text-center text-sm-start">
             <div class="main-logo">
-              <a href="index.php">
-                <img src="images/logo.png" alt="logo" class="img-fluid">
+              <a href="home.php">
+              <img src="images/logo91.png" alt="logo" class="img-fluid" style="width: 205px;">
               </a>
             </div>
           </div>
@@ -202,11 +147,12 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                   <option>All Categories</option>
                   <option>Groceries</option>
                   <option>Drinks</option>
-                  <option>Chocolates</option>
+                  <option>Household</option>
+                  <option>Personal Care</option>
                 </select>
               </div>
               <div class="col-11 col-md-7">
-                <form id="search-form" class="text-center" action="index.php" method="post">
+                <form id="search-form" class="text-center" action="home.php" method="post">
                   <input type="text" class="form-control border-0 bg-transparent" placeholder="Search for more than 20,000 products" />
                 </form>
               </div>
@@ -223,38 +169,13 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
             </div>
 
             <ul class="d-flex justify-content-end list-unstyled m-0">
-              <li class="nav-item dropdown position-relative">
-                <a 
-                  href="#" 
-                  class="rounded-circle bg-light p-2 mx-1" 
-                  id="userIcon" 
-                  role="button"
-                  data-bs-toggle="dropdown" 
-                  aria-expanded="false"
-                >
-                  <svg width="24" height="24" viewBox="0 0 24 24">
-                    <use xlink:href="#user"></use>
-                  </svg>
-                </a>
-
-                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userIcon">
-                  <li><a class="dropdown-item" href="profile.html">Profile</a></li>
-                  <li><hr class="dropdown-divider"></li>
-                  <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
-                  <script>
-                    document.addEventListener('DOMContentLoaded', () => {
-                    document.getElementById('logout')?.addEventListener('click', (e) => {
-                      e.preventDefault();
-                      // Redirect to logout endpoint
-                      window.location.href = 'logout.php';
-                     });
-                    });
-                  </script>
-                </ul>
-              </li>
-                  
               <li>
-                <a href="#" class="rounded-circle bg-light p-2 mx-1">
+                <a href="login.html" class="rounded-circle bg-light p-2 mx-1">
+                  <svg width="24" height="24" viewBox="0 0 24 24"><use xlink:href="#user"></use></svg>
+                </a>
+              </li>
+              <li>
+              <a href="#" class="rounded-circle bg-light p-2 mx-1 btn-wishlist">
                   <svg width="24" height="24" viewBox="0 0 24 24"><use xlink:href="#heart"></use></svg>
                 </a>
               </li>
@@ -273,7 +194,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
             <div class="cart text-end d-none d-lg-block dropdown">
               <button class="border-0 bg-transparent d-flex flex-column gap-2 lh-1" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasCart" aria-controls="offcanvasCart">
                 <span class="fs-6 text-muted dropdown-toggle">Your Cart</span>
-                <span id="header-cart-total" class="cart-total fs-5 fw-bold">$0.00</span>
+                <span id="header-cart-total" class="cart-total fs-5 fw-bold"></span>
               </button>
             </div>
           </div>
@@ -302,7 +223,8 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                     <option>Shop by Departments</option>
                     <option>Groceries</option>
                     <option>Drinks</option>
-                    <option>Chocolates</option>
+                    <option>Household</option>
+                   <option>Personal Care</option>
                   </select>
               
                   <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
@@ -321,18 +243,18 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                     <li class="nav-item dropdown">
                       <a class="nav-link dropdown-toggle" role="button" id="pages" data-bs-toggle="dropdown" aria-expanded="false">Pages</a>
                       <ul class="dropdown-menu" aria-labelledby="pages">
-                        <li><a href="index.php" class="dropdown-item">About Us </a></li>
-                        <li><a href="index.php" class="dropdown-item">Shop </a></li>
-                        <li><a href="index.php" class="dropdown-item">Single Product </a></li>
-                        <li><a href="index.php" class="dropdown-item">Cart </a></li>
-                        <li><a href="index.php" class="dropdown-item">Checkout </a></li>
-                        <li><a href="index.php" class="dropdown-item">Blog </a></li>
-                        <li><a href="index.php" class="dropdown-item">Single Post </a></li>
-                        <li><a href="index.php" class="dropdown-item">Styles </a></li>
-                        <li><a href="index.php" class="dropdown-item">Contact </a></li>
-                        <li><a href="index.php" class="dropdown-item">Thank You </a></li>
-                        <li><a href="index.php" class="dropdown-item">My Account </a></li>
-                        <li><a href="index.php" class="dropdown-item">404 Error </a></li>
+                        <li><a href="home.php" class="dropdown-item">About Us </a></li>
+                        <li><a href="home.php" class="dropdown-item">Shop </a></li>
+                        <li><a href="home.php" class="dropdown-item">Single Product </a></li>
+                        <li><a href="home.php" class="dropdown-item">Cart </a></li>
+                        <li><a href="home.php" class="dropdown-item">Checkout </a></li>
+                        <li><a href="home.php" class="dropdown-item">Blog </a></li>
+                        <li><a href="home.php" class="dropdown-item">Single Post </a></li>
+                        <li><a href="home.php" class="dropdown-item">Styles </a></li>
+                        <li><a href="home.php" class="dropdown-item">Contact </a></li>
+                        <li><a href="home.php" class="dropdown-item">Thank You </a></li>
+                        <li><a href="home.php" class="dropdown-item">My Account </a></li>
+                        <li><a href="home.php" class="dropdown-item">404 Error </a></li>
                       </ul>
                     </li>
                     <li class="nav-item">
@@ -350,9 +272,8 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
 
               </div>
           </div>
-          <!-- Welcome message on the right side -->
           <div class="ms-auto">
-           <h4>Welcome <?php echo htmlspecialchars($_SESSION['username']); ?>!</h4>
+           <h5>Welcome <?php echo htmlspecialchars($_SESSION['username']); ?>!</h5>
           </div>
         </div>
       </div>
@@ -456,7 +377,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
           <div class="col-md-12">
 
             <div class="section-header d-flex flex-wrap justify-content-between mb-5">
-              <h2 class="section-title">Category</h2>
+              <h2 class="section-title">Shop by Category</h2>
 
               <div class="d-flex align-items-center">
                 <a href="#" class="btn-link text-decoration-none">View All Categories →</a>
@@ -471,54 +392,54 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
         </div>
         <div class="row">
           <div class="col-md-12">
-
+            
             <div class="category-carousel swiper">
               <div class="swiper-wrapper">
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-bread-baguette.png" alt="Category Thumbnail">
                   <h3 class="category-title">Breads & Sweets</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-soft-drinks-bottle.png" alt="Category Thumbnail">
-                  <h3 class="category-title">Fruits & Veges</h3>
+                  <h3 class="category-title">Drinks & Juices</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-wine-glass-bottle.png" alt="Category Thumbnail">
-                  <h3 class="category-title">Fruits & Veges</h3>
+                  <h3 class="category-title">Alcoholic drinks</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-animal-products-drumsticks.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-bread-herb-flour.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
-                <a href="index.php" class="nav-link category-item swiper-slide">
+                <a href="home.php" class="nav-link category-item swiper-slide">
                   <img src="images/icon-vegetables-broccoli.png" alt="Category Thumbnail">
                   <h3 class="category-title">Fruits & Veges</h3>
                 </a>
@@ -531,6 +452,256 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
       </div>
     </section>
 
+    <section class="py-5 overflow-hidden">
+      <div class="container-fluid">
+        
+        <div class="row">
+          <div class="col-md-12">
+
+            <div class="bootstrap-tabs product-tabs">
+              <div class="tabs-header d-flex justify-content-between border-bottom my-5">
+                <h3>Trending Products</h3>
+                <nav>
+                  <div class="nav nav-tabs" id="nav-tab" role="tablist">
+                    <a href="#" class="nav-link text-uppercase fs-6 active" id="nav-all-tab" data-bs-toggle="tab" data-bs-target="#nav-all">All</a>
+                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-fruits-tab" data-bs-toggle="tab" data-bs-target="#nav-fruits">Fruits & Veges</a>
+                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-juices-tab" data-bs-toggle="tab" data-bs-target="#nav-juices">Juices</a>
+                  </div>
+                </nav>
+              </div>
+              <div class="tab-content" id="nav-tabContent">
+                <div class="tab-pane fade show active" id="nav-all" role="tabpanel" aria-labelledby="nav-all-tab">
+
+                  <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+                    <?php
+                     //$sql = "SELECT product_id, name, price, photo_source FROM products LIMIT 20";
+                     $sql = "
+                       SELECT 
+                         p.product_id, 
+                         p.name, 
+                         p.price, 
+                         p.photo_source, 
+                         SUM(COALESCE(si.quantity, 0)) AS total_quantity
+                       FROM products p
+                       LEFT JOIN store_inventory si ON p.product_id = si.product_id
+                       GROUP BY p.product_id, p.name, p.price, p.photo_source
+                     ";
+
+                     $result = $conn->query($sql);
+                    ?>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                      <div class="col">
+                        <div class="product-item">
+                          <a href="#" class="btn-wishlist">
+                            <svg width="24" height="24"><use xlink:href="#heart"></use></svg>
+                          </a>
+                          <figure>
+                            <a href="home.php" title="<?= htmlspecialchars($row['name']) ?>">
+                              <img src="<?= htmlspecialchars($row['photo_source']) ?>" class="tab-image" alt="<?= htmlspecialchars($row['name']) ?>">
+                            </a>
+                          </figure>
+                          <h3><?= htmlspecialchars($row['name']) ?></h3>
+                          <span class="qty">1 Unit</span>
+                          <span class="rating">
+                            <svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5
+                          </span>
+                          <?= $qty = $row['total_quantity'] ?? 0; ?>
+                          <span class="price">€<?= number_format($row['price'], 2) ?>
+                            <span style="margin-left: 10px; font-size: 0.65em; <?= $qty == 0 ? 'color:red;' : 'color:green;' ?>">
+                              <?= $qty == 0 ? 'Out of stock' : "in stock" ?>
+                            </span>         
+                          </span>
+                          <div class="d-flex align-items-center justify-content-between">
+                            <div class="input-group product-qty">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
+                                      <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
+                                    </button>
+                                </span>
+                                <input type="text" name="quantity" class="form-control input-number" value="1" min="1">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
+                                        <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
+                                    </button>
+                                </span>
+                            </div>
+                            <button 
+                                class="nav-link add-to-cart"
+                                data-id="<?= $row['product_id'] ?>"
+                                data-name="<?= htmlspecialchars($row['name']) ?>"
+                                data-price="<?= $row['price'] ?>" 
+                                <?= $qty == 0 ? 'disabled style="opacity:0.5; cursor: not-allowed;"' : '' ?>
+                              >
+                                Add to Cart <iconify-icon icon="uil:shopping-cart"></iconify-icon>
+                              </button>
+                          </div>
+                        </div>
+                      </div>
+                    <?php endwhile; ?>
+                    <!--data-quantity="1" -->
+
+                  </div>
+                  <!-- / product-grid -->
+                  
+                </div>
+
+                <div class="tab-pane fade" id="nav-fruits" role="tabpanel" aria-labelledby="nav-fruits-tab">
+                  
+                  <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+
+                  <?php
+                      // Only fetch products that are fruit or bakery
+                      $sql = "SELECT product_id, name, price, photo_source FROM products WHERE type IN ('fruit', 'bakery') LIMIT 20";
+                      $result = $conn->query($sql);
+                    ?>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                      <div class="col">
+                        <div class="product-item">
+                          <a href="#" class="btn-wishlist">
+                            <svg width="24" height="24"><use xlink:href="#heart"></use></svg>
+                          </a>
+                          <figure>
+                            <a href="home.php" title="<?= htmlspecialchars($row['name']) ?>">
+                              <img src="<?= htmlspecialchars($row['photo_source']) ?>" class="tab-image" alt="<?= htmlspecialchars($row['name']) ?>">
+                            </a>
+                          </figure>
+                          <h3><?= htmlspecialchars($row['name']) ?></h3>
+                          <span class="qty">1 Unit</span>
+                          <span class="rating">
+                            <svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5
+                          </span>
+                          <span class="price">€<?= number_format($row['price'], 2) ?></span>
+                          <div class="d-flex align-items-center justify-content-between">
+                            <div class="input-group product-qty">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
+                                      <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
+                                    </button>
+                                </span>
+                                <input type="text" name="quantity" class="form-control input-number" value="1" min="1" readonly style="width: 2ch;">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
+                                        <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
+                                    </button>
+                                </span>
+                            </div>
+                            <button 
+                                class="nav-link add-to-cart"
+                                data-id="<?= $row['product_id'] ?>"
+                                data-name="<?= htmlspecialchars($row['name']) ?>"
+                                data-price="<?= $row['price'] ?>" 
+                              >
+                                Add to Cart <iconify-icon icon="uil:shopping-cart"></iconify-icon>
+                              </button>
+                          </div>
+                        </div>
+                      </div>
+                    <?php endwhile; ?>
+
+                  </div>
+                  <!-- / product-grid -->
+
+                </div>
+                <div class="tab-pane fade" id="nav-juices" role="tabpanel" aria-labelledby="nav-juices-tab">
+
+                  <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
+
+                    <?php
+                      // Only fetch products that are juices or drinks
+                      $sql = "SELECT product_id, name, price, photo_source FROM products WHERE type IN ('dairy', 'drinks') LIMIT 20";
+                      $result = $conn->query($sql);
+                    ?>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                      <div class="col">
+                        <div class="product-item">
+                          <a href="#" class="btn-wishlist">
+                            <svg width="24" height="24"><use xlink:href="#heart"></use></svg>
+                          </a>
+                          <figure>
+                            <a href="home.php" title="<?= htmlspecialchars($row['name']) ?>">
+                              <img src="<?= htmlspecialchars($row['photo_source']) ?>" class="tab-image" alt="<?= htmlspecialchars($row['name']) ?>">
+                            </a>
+                          </figure>
+                          <h3><?= htmlspecialchars($row['name']) ?></h3>
+                          <span class="qty">1 Unit</span>
+                          <span class="rating">
+                            <svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5
+                          </span>
+                          <span class="price">€<?= number_format($row['price'], 2) ?></span>
+                          <div class="d-flex align-items-center justify-content-between">
+                            <div class="input-group product-qty">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
+                                      <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
+                                    </button>
+                                </span>
+                                <input type="text" name="quantity" class="form-control input-number" value="1" min="1" readonly>
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
+                                        <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
+                                    </button>
+                                </span>
+                            </div>
+                            <button 
+                                class="nav-link add-to-cart"
+                                data-id="<?= $row['product_id'] ?>"
+                                data-name="<?= htmlspecialchars($row['name']) ?>"
+                                data-price="<?= $row['price'] ?>" 
+                              >
+                                Add to Cart <iconify-icon icon="uil:shopping-cart"></iconify-icon>
+                              </button>
+                          </div>
+                        </div>
+                      </div>
+                    <?php endwhile; ?>
+
+                  </div>
+                  <!-- / product-grid -->
+                  
+                </div>
+                
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="py-5">
+      <div class="container-fluid">
+        <div class="row">
+          
+          <div class="col-md-6">
+            <div class="banner-ad bg-danger mb-3" style="background: url('images/ad-image-3.png');background-repeat: no-repeat;background-position: right bottom;">
+              <div class="banner-content p-5">
+
+                <div class="categories text-primary fs-3 fw-bold">Upto 25% Off</div>
+                <h3 class="banner-title">Luxa Dark Chocolate</h3>
+                <p>Very tasty & creamy vanilla flavour creamy muffins.</p>
+                <a href="#" class="btn btn-dark text-uppercase">Show Now</a>
+
+              </div>
+            
+            </div>
+          </div>
+          <div class="col-md-6">
+            <div class="banner-ad bg-info" style="background: url('images/ad-image-4.png');background-repeat: no-repeat;background-position: right bottom;">
+              <div class="banner-content p-5">
+
+                <div class="categories text-primary fs-3 fw-bold">Upto 25% Off</div>
+                <h3 class="banner-title">Creamy Muffins</h3>
+                <p>Very tasty & creamy vanilla flavour creamy muffins.</p>
+                <a href="#" class="btn btn-dark text-uppercase">Show Now</a>
+
+              </div>
+            
+            </div>
+          </div>
+             
+        </div>
+      </div>
+    </section>
 
     <section class="py-5 overflow-hidden">
       <div class="container-fluid">
@@ -657,759 +828,6 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
       </div>
     </section>
 
-
-    <section class="py-5 overflow-hidden">
-      <div class="container-fluid">
-        
-        <div class="row">
-          <div class="col-md-12">
-
-            <div class="bootstrap-tabs product-tabs">
-              <div class="tabs-header d-flex justify-content-between border-bottom my-5">
-                <h3>Trending Products</h3>
-                <nav>
-                  <div class="nav nav-tabs" id="nav-tab" role="tablist">
-                    <a href="#" class="nav-link text-uppercase fs-6 active" id="nav-all-tab" data-bs-toggle="tab" data-bs-target="#nav-all">All</a>
-                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-fruits-tab" data-bs-toggle="tab" data-bs-target="#nav-fruits">Fruits & Veges</a>
-                    <a href="#" class="nav-link text-uppercase fs-6" id="nav-juices-tab" data-bs-toggle="tab" data-bs-target="#nav-juices">Juices</a>
-                  </div>
-                </nav>
-              </div>
-              <div class="tab-content" id="nav-tabContent">
-                <div class="tab-pane fade show active" id="nav-all" role="tabpanel" aria-labelledby="nav-all-tab">
-
-                  <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
-                  
-                    <div class="col">
-                      <div class="product-item">
-                        <span class="badge bg-success position-absolute m-3">-30%</span>
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <span class="badge bg-success position-absolute m-3">-30%</span>
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-biscuits.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-cucumber.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-milk.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-biscuits.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-cucumber.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-milk.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-biscuits.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-                  <!-- / product-grid -->
-                  
-                </div>
-
-                <div class="tab-pane fade" id="nav-fruits" role="tabpanel" aria-labelledby="nav-fruits-tab">
-                  
-                  <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
-
-                    <div class="col">
-                      <div class="product-item">
-                        <span class="badge bg-success position-absolute m-3">-30%</span>
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-cucumber.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <span class="badge bg-success position-absolute m-3">-30%</span>
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-milk.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-                  
-                    <div class="col">
-                      <div class="product-item">
-                        <span class="badge bg-success position-absolute m-3">-30%</span>
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-orange-juice.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-raspberries.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-                  <!-- / product-grid -->
-
-                </div>
-                <div class="tab-pane fade" id="nav-juices" role="tabpanel" aria-labelledby="nav-juices-tab">
-
-                  <div class="product-grid row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5">
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-cucumber.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-milk.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-                  
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-tomatoes.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-tomatoketchup.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div class="col">
-                      <div class="product-item">
-                        <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                        <figure>
-                          <a href="index.php" title="Product Title">
-                            <img src="images/thumb-bananas.png"  class="tab-image">
-                          </a>
-                        </figure>
-                        <h3>Sunstar Fresh Melon Juice</h3>
-                        <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                        <span class="price">$18.00</span>
-                        <div class="d-flex align-items-center justify-content-between">
-                          <div class="input-group product-qty">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                                    <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                                  </button>
-                              </span>
-                              <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                              <span class="input-group-btn">
-                                  <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                      <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                                  </button>
-                              </span>
-                          </div>
-                          <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                        </div>
-                      </div>
-                    </div>
-
-                  </div>
-                  <!-- / product-grid -->
-                  
-                </div>
-                
-              </div>
-            </div>
-
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="py-5">
-      <div class="container-fluid">
-        <div class="row">
-          
-          <div class="col-md-6">
-            <div class="banner-ad bg-danger mb-3" style="background: url('images/ad-image-3.png');background-repeat: no-repeat;background-position: right bottom;">
-              <div class="banner-content p-5">
-
-                <div class="categories text-primary fs-3 fw-bold">Upto 25% Off</div>
-                <h3 class="banner-title">Luxa Dark Chocolate</h3>
-                <p>Very tasty & creamy vanilla flavour creamy muffins.</p>
-                <a href="#" class="btn btn-dark text-uppercase">Show Now</a>
-
-              </div>
-            
-            </div>
-          </div>
-          <div class="col-md-6">
-            <div class="banner-ad bg-info" style="background: url('images/ad-image-4.png');background-repeat: no-repeat;background-position: right bottom;">
-              <div class="banner-content p-5">
-
-                <div class="categories text-primary fs-3 fw-bold">Upto 25% Off</div>
-                <h3 class="banner-title">Creamy Muffins</h3>
-                <p>Very tasty & creamy vanilla flavour creamy muffins.</p>
-                <a href="#" class="btn btn-dark text-uppercase">Show Now</a>
-
-              </div>
-            
-            </div>
-          </div>
-             
-        </div>
-      </div>
-    </section>
-
     <section class="py-5 overflow-hidden">
       <div class="container-fluid">
         <div class="row">
@@ -1440,7 +858,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                   <span class="badge bg-success position-absolute m-3">-15%</span>
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoes.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1469,7 +887,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                   <span class="badge bg-success position-absolute m-3">-15%</span>
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoketchup.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1498,7 +916,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                   <span class="badge bg-success position-absolute m-3">-15%</span>
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1527,7 +945,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                   <span class="badge bg-success position-absolute m-3">-15%</span>
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1554,7 +972,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoes.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1582,7 +1000,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoketchup.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1610,7 +1028,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1638,7 +1056,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1682,7 +1100,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="section-header">
                   <h2 class="section-title display-4">Get <span class="text-primary">25% Discount</span> on your first purchase</h2>
                 </div>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dictumst amet, metus, sit massa posuere maecenas. At tellus ut nunc amet vel egestas.</p>
+                <p>Get 25% off your first purchase and start saving right away! Whether you're stocking up on essentials or trying something new, this exclusive welcome offer makes your first shopping experience even better. Don’t miss out—grab your discount and enjoy more for less!</p>
               </div>
               <div class="col-md-6 p-5">
                 <form>
@@ -1744,7 +1162,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoes.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1772,7 +1190,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoketchup.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1800,7 +1218,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1828,7 +1246,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1855,7 +1273,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoes.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1883,7 +1301,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-tomatoketchup.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1911,7 +1329,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1939,7 +1357,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="product-item swiper-slide">
                   <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
                   <figure>
-                    <a href="index.php" title="Product Title">
+                    <a href="home.php" title="Product Title">
                       <img src="images/thumb-bananas.png"  class="tab-image">
                     </a>
                   </figure>
@@ -1999,228 +1417,74 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
             <div class="products-carousel swiper">
               <div class="swiper-wrapper">
                 
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-tomatoes.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
+              <?php
+                     //$sql = "SELECT product_id, name, price, photo_source FROM products LIMIT 20";
+                     $sql = "
+                       SELECT 
+                         p.product_id, 
+                         p.name, 
+                         p.price, 
+                         p.photo_source, 
+                         SUM(COALESCE(si.quantity, 0)) AS total_quantity
+                       FROM products p
+                       LEFT JOIN store_inventory si ON p.product_id = si.product_id
+                       WHERE p.new_prod = 1
+                       GROUP BY p.product_id, p.name, p.price, p.photo_source
+                     ";
 
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-tomatoketchup.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
+                     $result = $conn->query($sql);
+                    ?>
+                    <?php while($row = $result->fetch_assoc()): ?>
+                      <div class="product-item swiper-slide">
+                      <div class="col">
+                        <div class="product-item">
+                          <a href="#" class="btn-wishlist">
+                            <svg width="24" height="24"><use xlink:href="#heart"></use></svg>
+                          </a>
+                          <figure>
+                            <a href="index.php" title="<?= htmlspecialchars($row['name']) ?>">
+                              <img src="<?= htmlspecialchars($row['photo_source']) ?>" class="tab-image" alt="<?= htmlspecialchars($row['name']) ?>">
+                            </a>
+                          </figure>
+                          <h3><?= htmlspecialchars($row['name']) ?></h3>
+                          <span class="qty">1 Unit</span>
+                          <span class="rating">
+                            <svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5
+                          </span>
+                          <?= $qty = $row['total_quantity'] ?? 0; ?>
+                          <span class="price">€<?= number_format($row['price'], 2) ?>
+                            <span style="margin-left: 10px; font-size: 0.65em; <?= $qty == 0 ? 'color:red;' : 'color:green;' ?>">
+                              <?= $qty == 0 ? 'Out of stock' : "in stock" ?>
+                            </span>         
+                          </span>
+                          <div class="d-flex align-items-center justify-content-between">
+                            <div class="input-group product-qty">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
+                                      <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
+                                    </button>
+                                </span>
+                                <input type="text" name="quantity" class="form-control input-number" value="1" min="1">
+                                <span class="input-group-btn">
+                                    <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
+                                        <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
+                                    </button>
+                                </span>
+                            </div>
+                            <button 
+                                class="nav-link add-to-cart"
+                                data-id="<?= $row['product_id'] ?>"
+                                data-name="<?= htmlspecialchars($row['name']) ?>"
+                                data-price="<?= $row['price'] ?>" 
+                                <?= $qty == 0 ? 'disabled style="opacity:0.5; cursor: not-allowed;"' : '' ?>
+                              >
+                                Add to Cart <iconify-icon icon="uil:shopping-cart"></iconify-icon>
+                              </button>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
-
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-bananas.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
-
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-bananas.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-tomatoes.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
-
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-tomatoketchup.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
-
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-bananas.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
-
-                <div class="product-item swiper-slide">
-                  <a href="#" class="btn-wishlist"><svg width="24" height="24"><use xlink:href="#heart"></use></svg></a>
-                  <figure>
-                    <a href="index.php" title="Product Title">
-                      <img src="images/thumb-bananas.png"  class="tab-image">
-                    </a>
-                  </figure>
-                  <h3>Sunstar Fresh Melon Juice</h3>
-                  <span class="qty">1 Unit</span><span class="rating"><svg width="24" height="24" class="text-primary"><use xlink:href="#star-solid"></use></svg> 4.5</span>
-                  <span class="price">$18.00</span>
-                  <div class="d-flex align-items-center justify-content-between">
-                    <div class="input-group product-qty">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-left-minus btn btn-danger btn-number" data-type="minus">
-                              <svg width="16" height="16"><use xlink:href="#minus"></use></svg>
-                            </button>
-                        </span>
-                        <input type="text" id="quantity" name="quantity" class="form-control input-number" value="1">
-                        <span class="input-group-btn">
-                            <button type="button" class="quantity-right-plus btn btn-success btn-number" data-type="plus">
-                                <svg width="16" height="16"><use xlink:href="#plus"></use></svg>
-                            </button>
-                        </span>
-                    </div>
-                    <a href="#" class="nav-link">Add to Cart <iconify-icon icon="uil:shopping-cart"></a>
-                  </div>
-                </div>
+                    <?php endwhile; ?>
                 
               </div>
             </div>
@@ -2319,8 +1583,8 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <img src="images/phone.png" alt="phone" class="image-float img-fluid">
               </div>
               <div class="col-md-8">
-                <h2 class="my-5">Shop faster with foodmart App</h2>
-                <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sagittis sed ptibus liberolectus nonet psryroin. Amet sed lorem posuere sit iaculis amet, ac urna. Adipiscing fames semper erat ac in suspendisse iaculis. Amet blandit tortor praesent ante vitae. A, enim pretiummi senectus magna. Sagittis sed ptibus liberolectus non et psryroin.</p>
+                <h2 class="my-5">Shop faster with Supermarketakis App</h2>
+                <p>Shop faster with the Supermarketakis app because it streamlines your entire shopping experience—from creating smart grocery lists to finding deals and navigating aisles. With real-time inventory, digital receipts, and quick checkout options, the app eliminates the usual store hassles and gets you in and out faster. It's convenience, right in your pocket.</p>
                 <div class="d-flex gap-2 flex-wrap">
                   <img src="images/app-store.jpg" alt="app-store">
                   <img src="images/google-play.jpg" alt="google-play">
@@ -2369,7 +1633,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="col-md-10">
                   <div class="card-body p-0">
                     <h5>Free delivery</h5>
-                    <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipi elit.</p>
+                    <p class="card-text">For odrers over 30€!</p>
                   </div>
                 </div>
               </div>
@@ -2384,7 +1648,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="col-md-10">
                   <div class="card-body p-0">
                     <h5>100% secure payment</h5>
-                    <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipi elit.</p>
+                    <p class="card-text">100% safe payments through Garmiris bank payment system!</p>
                   </div>
                 </div>
               </div>
@@ -2399,7 +1663,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="col-md-10">
                   <div class="card-body p-0">
                     <h5>Quality guarantee</h5>
-                    <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipi elit.</p>
+                    <p class="card-text">We get all of our products from top quality suppliers!</p>
                   </div>
                 </div>
               </div>
@@ -2414,7 +1678,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
                 <div class="col-md-10">
                   <div class="card-body p-0">
                     <h5>guaranteed savings</h5>
-                    <p class="card-text">Lorem ipsum dolor sit amet, consectetur adipi elit.</p>
+                    <p class="card-text">Collect points and get special discounts on selected products!</p>
                   </div>
                 </div>
               </div>
@@ -2445,7 +1709,7 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
 
           <div class="col-lg-3 col-md-6 col-sm-6">
             <div class="footer-menu">
-              <img src="images/logo.png" alt="logo">
+            <img src="images/logo91.png" alt="logo" style=" width: 291px; height: auto;">
               <div class="social-links mt-5">
                 <ul class="d-flex list-unstyled gap-2">
                   <li>
@@ -2561,5 +1825,6 @@ if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
     <script src="js/plugins.js"></script>
     <script src="js/script.js"></script>
     <script src="js/shoppingCart.js"></script>
+    <script src="js/wishlisthandle.js"></script>
   </body>
 </html>

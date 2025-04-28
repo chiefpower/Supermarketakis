@@ -5,7 +5,7 @@ include 'db.php';
 if (isset($_GET['low_inv'])) {
    // file_put_contents('debug_postres.txt', print_r(  $result, true));
     fetchLowInventoryAlerts($conn);
-   // exit; // important: stop rest of page from loading
+   // exit; 
 }else{
     renderDashboardFunctions();
 }

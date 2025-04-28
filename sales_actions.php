@@ -263,47 +263,8 @@ function processUserOrderReductions($conn, $selectedDate) {
     }
 }
 
-// Function to call the PlaceBackOrderRequest stored procedure
-function callPlaceBackOrderRequest($conn, $product_id, $warehouse_id) {
-    // Prepare the stored procedure call
-    $stmt = $conn->prepare("CALL PlaceBackOrderRequest(?, ?)");
-    
-    // Check for preparation errors
-    if ($stmt === false) {
-        die("Error in preparing statement: " . $conn->error);
-    }
-
-    // Bind the parameters to the prepared statement
-    $stmt->bind_param("ii", $product_id, $warehouse_id); // 'ii' indicates two integers
-
-    // Execute the stored procedure
-    if ($stmt->execute()) {
-        // Fetch the result set (if applicable)
-        $result = $stmt->get_result();
-
-        // Check if the result has more than one row
-        if ($result->num_rows > 1) {
-            while ($row = $result->fetch_assoc()) {
-                // Process each row (or store them in an array for later use)
-                // For example, printing the results:
-                echo "Back order request for Product ID: " . $row['product_id'] . " at Warehouse ID: " . $row['warehouse_id'] . "<br>";
-            }
-        } elseif ($result->num_rows == 1) {
-            // Handle the single row result here
-            $row = $result->fetch_assoc();
-            echo "Back order request for Product ID: " . $row['product_id'] . " at Warehouse ID: " . $row['warehouse_id'] . "<br>";
-        } else {
-            echo "No back order request found.";
-        }
-    } else {
-        echo "Error executing stored procedure: " . $stmt->error;
-    }
-
-    // Close the statement
-    $stmt->close();
-}
-
 function backOrderUpdate(mysqli $conn, int $product_id, int $warehouse_id, string $selectedDate) {
+    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
     try {
         $formatted_date = date('Y-m-d', strtotime($selectedDate)); // ensure format is correct
 
@@ -337,7 +298,7 @@ function backOrderUpdate(mysqli $conn, int $product_id, int $warehouse_id, strin
             // 3. Update existing backorder status to 'ordered'
             $stmt = $conn->prepare("
                 UPDATE backorder_requests 
-                SET status = 'ordered', order_date = NOW() 
+                SET status = 'ordered', request_date = NOW() 
                 WHERE product_id = ? AND warehouse_id = ? AND status = 'pending'
             ");
             $stmt->bind_param("ii", $product_id, $warehouse_id);
@@ -345,7 +306,7 @@ function backOrderUpdate(mysqli $conn, int $product_id, int $warehouse_id, strin
             $stmt->close();
         }
 
-        echo "Backorder request update for product $product_id and warehouse $warehouse_id on $selectedDate.<br>";
+        echo "Backorder request update for product $product_id and warehouse $warehouse_id on $selectedDate. $backorder_exists rows affected.<br>";
 
     } catch (Exception $e) {
         echo "Error in backOrderUpdate: " . $e->getMessage();
@@ -374,7 +335,9 @@ function markOrdersAsDelivered(mysqli $conn, int $product_id, int $warehouse_id,
         if ($stmt->execute()) {
             $affected = $stmt->affected_rows;
             $stmt->close();
-            echo "$affected order(s) marked as delivered.<br>";
+            if ($affected > 0){
+                echo "$affected order(s) marked as delivered.<br>";
+            }      
             return true;
         } else {
             throw new Exception("Failed to execute update.");
@@ -387,16 +350,8 @@ function markOrdersAsDelivered(mysqli $conn, int $product_id, int $warehouse_id,
 
 function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $warehouse_id, int $source_id, string $source_type, bool $is_auto_triggered = false, $selectedDate) {
     $source_type = strtolower($source_type);
-
     try {
-        // Get product price
-        $stmt = $conn->prepare("SELECT price FROM products WHERE product_id = ?");
-        if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
-        $stmt->bind_param("i", $product_id);
-        if (!$stmt->execute()) throw new Exception("Execution failed: " . $stmt->error);
-        $stmt->bind_result($product_price);
-        if (!$stmt->fetch()) throw new Exception("Product not found.");
-        $stmt->close();
+        
 
         if ($source_type === 'store') {
             $stmt = $conn->prepare("SELECT quantity FROM warehouse_inventory WHERE product_id = ? AND warehouse_id = ?");
@@ -411,19 +366,19 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
                 throw new Exception("Product '$product_id' not found in warehouse '$warehouse_id'.");
             } elseif ($current_qty < $quantity) {
                 $shortfall = $quantity - $current_qty;
-
+                //file_put_contents('debug3_postres.txt', print_r(  $source_id, true));
                 // Update warehouse
                 $stmt = $conn->prepare("UPDATE warehouse_inventory SET quantity = quantity - ? WHERE product_id = ? AND warehouse_id = ?");
                 if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
                 $stmt->bind_param("iii", $current_qty, $product_id, $warehouse_id);
                 if (!$stmt->execute()) throw new Exception("Execution failed: " . $stmt->error);
                 $stmt->close();
-
+                
                 // Log OUT
                 $query = "INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, store_id, source_type, transaction_type, notes)
                           VALUES ($product_id, $current_qty, $warehouse_id, $source_id, 'store', 'OUT', 'Partial transfer to store $source_id')";
                 if (!$conn->query($query)) throw new Exception($conn->error);
-
+                
                 // Store inventory update/insert
                 $exists = $conn->query("SELECT 1 FROM store_inventory WHERE product_id = $product_id AND store_id = $source_id")->num_rows > 0;
                 if ($exists) {
@@ -432,17 +387,17 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
                     $query = "INSERT INTO store_inventory (product_id, store_id, quantity) VALUES ($product_id, $source_id, $current_qty)";
                 }
                 if (!$conn->query($query)) throw new Exception($conn->error);
-
+                
                 // Log IN
                 $query = "INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, store_id, source_type, transaction_type, notes)
                           VALUES ($product_id, $current_qty, $warehouse_id, $source_id, 'store', 'IN', 'Partially received from warehouse $warehouse_id')";
                 if (!$conn->query($query)) throw new Exception($conn->error);
-
+                
                 // Backorder
                 $query = "INSERT INTO backorder_requests (product_id, warehouse_id, store_id, requested_qty, fulfilled_qty, shortfall_qty, request_type, notes)
                           VALUES ($product_id, $warehouse_id, $source_id, $quantity, $current_qty, $shortfall, 'store', 'Auto-created from store order shortfall')";
                 if (!$conn->query($query)) throw new Exception($conn->error);
-
+                
                 if (!$is_auto_triggered) {
                     $stmt = $conn->prepare("CALL PlaceOrderForLowInventory(?, ?, 'warehouse')");
                     if (!$stmt) throw new Exception($conn->error);
@@ -454,13 +409,14 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
                 echo " Shortfall: only $current_qty moved from '$warehouse_id' to '$source_id'. Reorder placed.<br>";
                 backOrderUpdate($conn, $product_id, $warehouse_id, $selectedDate);
             } else {
+                //file_put_contents('debug5_postres.txt', print_r(  $warehouse_id , true));
                 // Full transfer
                 $stmt = $conn->prepare("UPDATE warehouse_inventory SET quantity = quantity - ? WHERE product_id = ? AND warehouse_id = ?");
                 if (!$stmt) throw new Exception($conn->error);
                 $stmt->bind_param("iii", $quantity, $product_id, $warehouse_id);
                 if (!$stmt->execute()) throw new Exception($stmt->error);
                 $stmt->close();
-
+                
                 $query = "INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, store_id, source_type, transaction_type, notes)
                           VALUES ($product_id, $quantity, $warehouse_id, $source_id, 'store', 'OUT', 'Transfer to store $source_id')";
                 if (!$conn->query($query)) throw new Exception($conn->error);
@@ -470,7 +426,7 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
                     ? "UPDATE store_inventory SET quantity = quantity + $quantity WHERE product_id = $product_id AND store_id = $source_id"
                     : "INSERT INTO store_inventory (product_id, store_id, quantity) VALUES ($product_id, $source_id, $quantity)";
                 if (!$conn->query($query)) throw new Exception($conn->error);
-
+               // file_put_contents('debug7_postres.txt', print_r(  $source_id, true));
                 $query = "INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, store_id, source_type, transaction_type, notes)
                           VALUES ($product_id, $quantity, $warehouse_id, $source_id, 'store', 'IN', 'Received from warehouse $warehouse_id')";
                 if (!$conn->query($query)) throw new Exception($conn->error);
@@ -481,7 +437,7 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
             markOrdersAsDelivered($conn, $product_id, $warehouse_id, $selectedDate, $source_type = 'store');
         } elseif ($source_type === 'warehouse') {
             // Warehouse receiving from supplier
-
+            
             // Get order price
             $stmt = $conn->prepare("SELECT price FROM orders WHERE product_id = ? AND warehouse_id = ? AND status = 'confirmed' ORDER BY order_date DESC LIMIT 1");
             if (!$stmt) throw new Exception($conn->error);
@@ -491,25 +447,39 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
             $stmt->fetch();
             $stmt->close();
 
+            // Get product price
+            $stmt = $conn->prepare("SELECT price FROM products WHERE product_id = ?");
+            if (!$stmt) throw new Exception("Prepare failed: " . $conn->error);
+            $stmt->bind_param("i", $product_id);
+            if (!$stmt->execute()) throw new Exception("Execution failed: " . $stmt->error);
+            $stmt->bind_result($product_price);
+            if (!$stmt->fetch()) throw new Exception("Product not found.");
+            $stmt->close();
+    
             if (isset($current_price) && $current_price != $product_price) {
                 $stmt = $conn->prepare("UPDATE products SET price = ? WHERE product_id = ?");
                 $stmt->bind_param("di", $current_price, $product_id);
                 if (!$stmt->execute()) throw new Exception($stmt->error);
                 $stmt->close();
             }
-
+            
             // Inventory update or insert
             $exists = $conn->query("SELECT 1 FROM warehouse_inventory WHERE product_id = $product_id AND warehouse_id = $warehouse_id")->num_rows > 0;
             if ($exists) {
-                $stmt = $conn->prepare("CALL UpdateWarehouseInventoryAndHandleBackorders(?, ?, ?)");
-                $stmt->bind_param("iii", $product_id, $quantity, $warehouse_id);
+                
+                $stmt = $conn->prepare("CALL UpdateWarehouseInventoryAndHandleBackorders(?, ?, ?, ?)");
+                $stmt->bind_param("iiii", $product_id, $quantity, $warehouse_id, $source_id);
                 if (!$stmt->execute()) throw new Exception($stmt->error);
+                
                 $stmt->close();
             } else {
+             //   $combined = "$warehouse_id $product_id $quantity";
+                $combined = "$product_id $quantity $warehouse_id $source_id $source_type " . ($is_auto_triggered ? '1' : '0') . " $selectedDate";
+                //file_put_contents('debug7_postres.txt', print_r(  $combined, true));
                 $query = "INSERT INTO warehouse_inventory (product_id, warehouse_id, quantity) VALUES ($product_id, $warehouse_id, $quantity)";
                 if (!$conn->query($query)) throw new Exception($conn->error);
             }
-
+           
             // Log IN
             $query = "INSERT INTO inventory_transactions (product_id, quantity, warehouse_id, source_type, transaction_type, notes)
                       VALUES ($product_id, $quantity, $warehouse_id, 'warehouse', 'IN', 'Received from supplier (source ID $source_id)')";

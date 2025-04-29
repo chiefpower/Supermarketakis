@@ -39,9 +39,15 @@ $order_items = $items_result->fetch_all(MYSQLI_ASSOC);
 $stmt->close();
 
 // Step 3: Get user profile
-$stmt = $conn->prepare("SELECT first_name, last_name, phone, address_line_1, 
-                            address_line_2, country, zip_code, notes, preferred_store_id 
-                            FROM user_profiles WHERE user_id = ?");
+$stmt = $conn->prepare("
+    SELECT 
+        up.first_name, up.last_name, up.phone, up.address_line_1, 
+        up.address_line_2, up.country, up.zip_code, up.notes, 
+        up.preferred_store_id, u.email
+    FROM user_profiles up
+    JOIN users u ON u.id = up.user_id
+    WHERE up.user_id = ?
+");
 $stmt->bind_param("i", $user_id);
 $stmt->execute();
 $profile_result = $stmt->get_result();
@@ -68,6 +74,7 @@ $stmt->close();
     integrity="sha384-KK94CHFLLe+nY2dmCWGMq91rCGa5gtU4mk92HdvYe+M/SXH301p5ILy+dN9+nJOZ" crossorigin="anonymous">
   <link rel="stylesheet" type="text/css" href="css/vendor.css">
   <link rel="stylesheet" type="text/css" href="style.css">
+  <link rel="stylesheet" type="text/css" href="css/tablehover.css">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -365,71 +372,74 @@ $stmt->close();
               
 
             <div class="container my-5">
-  <h2 class="mb-4">Order Confirmation</h2>
+              <h2 class="mb-4">Order Confirmation</h2>
 
-  <!-- Order Info -->
-  <div class="card mb-4">
-    <div class="card-header"><strong>Order Summary</strong></div>
-    <div class="card-body">
-      <p><strong>Order ID:</strong> <?= htmlspecialchars($order_id) ?></p>
-      <p><strong>Order Date:</strong> <?= htmlspecialchars($order_date) ?></p>
-    </div>
-  </div>
+              <!-- Order Info -->
+              <div class="card mb-4">
+                <div class="card-header"><strong>Order Summary</strong></div>
+                <div class="card-body">
+                  <p><strong>Order ID:</strong> <?= htmlspecialchars($order_id) ?></p>
+                  <p><strong>Order Date:</strong> <?= htmlspecialchars($order_date) ?></p>
+                </div>
+              </div>
 
-  <!-- User Info -->
-  <div class="card mb-4">
-    <div class="card-header"><strong>Customer Information</strong></div>
-    <div class="card-body">
-      <p><strong>Name:</strong> <?= htmlspecialchars($user_profile['first_name']) ?></p>
-      <p><strong>Email:</strong> <?= htmlspecialchars($user_profile['email']) ?></p>
-      <p><strong>Phone:</strong> <?= htmlspecialchars($user_profile['phone']) ?></p>
-      <p><strong>Address:</strong> <?= htmlspecialchars($user_profile['address_line_1']) ?></p>
-    </div>
-  </div>
+              <!-- User Info -->
+              <div class="card mb-4">
+                <div class="card-header"><strong>Customer Information</strong></div>
+                <div class="card-body">
+                  <p><strong>Name:</strong> <?= htmlspecialchars($user_profile['first_name']) ?> <?= htmlspecialchars($user_profile['last_name']) ?></p>
+                  <p><strong>Email:</strong> <?= htmlspecialchars($user_profile['email']) ?></p>
+                  <p><strong>Phone:</strong> <?= htmlspecialchars($user_profile['phone']) ?></p>
+                  <p><strong>Address:</strong> <?= htmlspecialchars($user_profile['address_line_1']) ?></p>
+                </div>
+              </div>
 
-  <!-- Order Items -->
-<div class="card mb-4">
-  <div class="card-header"><strong>Items in Your Order</strong></div>
-  <div class="table-responsive">
-    <table class="table table-striped mb-0">
-      <thead>
-        <tr>
-          <th>Product</th>
-          <th>Quantity</th>
-          <th>Price (€)</th>
-          <th>Total (€)</th>
-        </tr>
-      </thead>
-      <tbody>
-      <?php $grand_total = 0; ?>
-      <?php foreach ($order_items as $item): ?>
-        <?php
-          $total = $item['quantity'] * $item['price'];
-          $grand_total += $total;
-        ?>
-        <tr>
-          <td><?= htmlspecialchars($item['product_name']) ?> (ID: <?= $item['product_id'] ?>)</td>
-          <td><?= htmlspecialchars($item['quantity']) ?></td>
-          <td><?= number_format($item['price'], 2) ?></td>
-          <td><?= number_format($total, 2) ?></td>
-        </tr>
-      <?php endforeach; ?>
-      <tr>
-        <th colspan="3" class="text-end">Grand Total</th>
-        <th>€<?= number_format($grand_total, 2) ?></th>
-      </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
+              <!-- Order Items -->
+            <div class="card mb-4">
+              <div class="card-header"><strong>Items in Your Order</strong></div>
+              <div class="table-responsive">
+                <table class="table table-striped mb-0">
+                  <thead>
+                    <tr>
+                      <th>Product</th>
+                      <th>Quantity</th>
+                      <th>Price (€)</th>
+                      <th>Total (€)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                  <?php $grand_total = 0; ?>
+                  <?php foreach ($order_items as $item): ?>
+                    <?php
+                      $total = $item['quantity'] * $item['price'];
+                      $grand_total += $total;
+                    ?>
+                    <tr>
+                      <td><?= htmlspecialchars($item['product_name']) ?> (ID: <?= $item['product_id'] ?>)</td>
+                      <td><?= htmlspecialchars($item['quantity']) ?></td>
+                      <td><?= number_format($item['price'], 2) ?></td>
+                      <td><?= number_format($total, 2) ?></td>
+                    </tr>
+                  <?php endforeach; ?>
+                  <tr>
+                    <th colspan="3" class="text-end">Grand Total</th>
+                    <th>€<?= number_format($grand_total, 2) ?></th>
+                  </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            <div class="d-flex justify-content-center align-items-center mt-4">
+            <button class="btn btn-dark-green" id="confirm-order" data-order-id="<?php echo $order_id; ?>">
+              Confirm and Send Order
+            </button>
+            </div>
+            <div id="message1" class="d-flex justify-content-center align-items-center mt-3"></div>
+            <div id="message" class="d-flex justify-content-center align-items-center mt-3"></div>
 
-
-  <div class="alert alert-success text-center mt-4">
-    Thank you for your order! A confirmation email will be sent shortly.
-  </div>
-</div>
+            </div>
               
-
             </div>
           </div>
           <!-- / Banner Blocks -->
@@ -580,6 +590,7 @@ $stmt->close();
   <script src="js/plugins.js"></script>
   <script src="js/script.js"></script>
   <script src="js/shoppingCart.js"></script>
+  <script src="js/confirmorder.js"></script>
 </body>
 
 </html>

@@ -6,4 +6,15 @@
     background-color: rgba(77, 102, 112, 0.2); /* subtle white glow */
     color: #0884f1 !important;
   }
+
+  .btn-dark-green {
+    background-color: #14532d; /* Dark green */
+    border: 2px solid #0f3e21; /* Darker outline */
+    color: white;
+  }
+
+  .btn-dark-green:hover {
+    background-color: #0f3e21;
+    border-color: #0a2d18;
+  }
   

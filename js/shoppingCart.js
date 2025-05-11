@@ -119,7 +119,6 @@ function renderCart() {
     });
   });
 
-
   // Update badge with total quantity
   const cartItemCount = document.getElementById('cart-item-count');
   if (cartItemCount) {
@@ -127,8 +126,8 @@ function renderCart() {
     cartItemCount.textContent = totalQuantity;
   }
 }
-// Add event listeners to +/– buttons
- 
+
+// Add event listeners to +/– buttons 
 document.addEventListener('DOMContentLoaded', function () {
   // Minus button
   document.querySelectorAll('.quantity-left-minus').forEach(button => {
@@ -151,6 +150,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   });
 });
+
 // Event listener for the "Add to Cart" buttons
 document.querySelectorAll('.add-to-cart').forEach(button => {
   button.addEventListener('click', function(e) {

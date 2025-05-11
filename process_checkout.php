@@ -82,19 +82,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Handle the result
     if ($result['success']) {
-        // Redirect or display a success message
-        //echo "Order created successfully! Your order ID is: " . $result['order_id'];
+        // Display a success message
         echo json_encode([
             'success' => true,
             'order_id' => $result['order_id']
         ]);
-        // Optionally, send the confirmation email (already handled in the function)
-        // You can also redirect the user to a success page
-       // header("Location: order_confirmation.php?order_id=" . $result['order_id']);
+        // Send the confirmation email TODO
+    
         exit();
     } else {
         // Handle failure
-       // echo json_encode(['error' => $error]);
         echo json_encode([
             'success' => false,
             'error' => $result['error']

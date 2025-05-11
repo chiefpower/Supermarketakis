@@ -80,9 +80,6 @@ if (empty($whereClause)) {
     exit;
 }
 
-//error_log("Executing SQL: $sql");
-//error_log("Types: $types");
-//error_log("Values: " . json_encode($values));
 // Construct the SQL query
 $sql = "UPDATE `$table` SET " . implode(', ', $updateParts) . " WHERE $whereClause";
 $stmt = $conn->prepare($sql);

@@ -30,8 +30,6 @@ $(document).ready(function() {
         currentPage = 1; // reset page
         currentTable = tableName;
         console.log('Clicked table:', tableName);
-
-
       
         // Load table data dynamically
         loadTableData(tableName);
@@ -87,7 +85,7 @@ $(document).ready(function() {
     $(document).on('change', '#action-toggle', function() {
         isActionEnabled = $(this).prop('checked'); // Check if the checkbox is selected
 
-        // Handle any logic when the checkbox state changes (e.g., enable/disable table actions)
+        // Handle any logic when the checkbox state changes 
         console.log('Add/Delete/Update enabled:', isActionEnabled);
 
     });
@@ -115,7 +113,6 @@ $(document).ready(function() {
           return;
         }
       
-        //const action = $(this).attr('id') === 'edit-selected' ? 'edit_rows.php' : 'delete_rows.php';
         const action = $(this).attr('id') === 'edit-selected' ? 'edit_rows.php' : 'confirm-delete-view.php';
        // console.log('1',selectedIds);
         $.ajax({
@@ -139,14 +136,11 @@ $(document).ready(function() {
       $(document).on('submit', '.edit-row-form', function(e) {
         e.preventDefault();
         
-       // const messageBox = document.getElementById('message');
         const messageBox = $(this).find('.message-box');
         const $form = $(this);
         const formData = $form.serialize();
-        const $feedback = $form.find('.save-feedback');
         //console.log('Submitting form data:', formData);
-       // console.log('Form data being submitted:');
-       // $form.serializeArray().forEach(f => console.log(f.name + ' = ' + f.value));
+
         $.ajax({
             url: 'update_row.php',
             method: 'POST',
@@ -156,19 +150,14 @@ $(document).ready(function() {
                 const messageId = $form.data('id');
                 const messageBox = $('#message-' + messageId); // Get the unique message div for this form
                 if (response.status === 'success') {
-                   // $feedback.text(response.message).removeClass('text-danger').addClass('text-success');
-                   // messageBox.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
                    messageBox.html(`<div class="alert alert-success">${response.message}</div>`);
                    console.log('Cback-to-tables:',messageBox);
                 } else {
-                    //$feedback.text(response.message).removeClass('text-success').addClass('text-danger');
-                   // messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
                    messageBox.html(`<div class="alert alert-danger">${response.message}</div>`);
                    console.log('Full response1:', response);
                 }
             },
             error: function(response) {
-                //$feedback.text('An error occurred').removeClass('text-success').addClass('text-danger');
              //   messageBox.innerHTML = `<div class="alert alert-danger">${response.message}</div>`;
                 messageBox.html(`<div class="alert alert-danger">${response.message}</div>`);
                 console.log('Full response2:', response);
@@ -187,7 +176,7 @@ $(document).ready(function() {
           table: currentTable
         },
         success: function (response) {
-          $('#content-area').html(response); // Load edit/delete response
+          $('#content-area').html(response); // Load insert form response
         },
         error: function (xhr, status, error) {
           console.log('2',error);
@@ -201,11 +190,10 @@ $(document).ready(function() {
       const insertForm = document.getElementById('insert-row-form');
       const messageBox = document.getElementById('message');
       messageBox.innerHTML = "";
-      //if (!insertForm) return;
+
       const $form = $(this);
       const formData = $form.serialize();
       if (!insertForm){
-       // console.log('Full response:', currentTable);
         console.log('Full response:', formData);
       }
   
@@ -215,10 +203,8 @@ $(document).ready(function() {
         data: formData + '&table=' + encodeURIComponent(currentTable),
         dataType: 'json',
         success: function (response) {
-        //  if (response.status === 'success') {
           if (response.success) {
            // $('#content-area').html(response); // Load edit/delete response
-           // messageBox.text(response.message).removeClass('text-danger').addClass('text-success');
             messageBox.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
             console.log('Cback-to-tables:',messageBox);
           } else {
@@ -228,7 +214,6 @@ $(document).ready(function() {
           
         },
         error: function (xhr, status, error) {
-          //console.log('a response',response);
           console.log('a',error);
          // alert('Error performing action2: ' + error);
         }
@@ -238,18 +223,13 @@ $(document).ready(function() {
     $(document).on('click', '#confirm-delete', function () {
       const table = $(this).data('table');
       const ids = JSON.parse(this.dataset.ids);  
-      
-    // console.log("Table: ", table);
-    //  console.log("IDs: ", ids);
     
       $.post('delete_rows.php', { table, ids }, function (response) {
         const messageBox = document.getElementById('message');
         console.log("Delete response: ", response);
        
        if (response.success) {
-         // $('#message').html(`<div class="alert alert-success">${response.message}</div>`);
           messageBox.innerHTML = `<div class="alert alert-success">${response.message}</div>`;
-          //alert('Rows deleted successfully.');  
          // loadTableData(table); // Reload table data
         } else {
           alert('Error: ' + response.message);
@@ -293,7 +273,7 @@ $(document).ready(function() {
       //const targetUrl = isEditMode ? 'table_actions.php' : 'load_table_data.php';
       //const targetUrl = isActionEnabled ? 'table_actions.php' : 'load_table_data.php';
       const targetUrl = 'table_actions.php';
-      //console.log('Error loading tables', targetUrl);
+
       $.ajax({
         url: targetUrl,
         type: 'GET',

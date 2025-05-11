@@ -50,7 +50,6 @@ if ($limit == 'ALL') {
 
 //$totalPages = ceil($totalRows / $limit);
 // Display as simple table
-//echo "<h4>Contents of $table</h4>";
 echo "
 <div class='d-flex justify-content-between align-items-center mb-3 flex-wrap'>
   <h4 class='mb-0'>Contents of $table</h4>
@@ -99,7 +98,7 @@ while ($row = $result->fetch_assoc()) {
   echo "<tr>";
   $rowValues = array_values($row); // reindex numerically
   $rowId = $rowValues[0]; // get the first value  
-  //$rowId = $row['id'] ?? ''; // use your primary key column
+  //$rowId = $row['id'] ?? ''; // use primary key column
   echo "<td><input type='checkbox' class='row-checkbox' value='" . htmlspecialchars($rowId) . "'></td>";
   //print_r($row);
   // Add a checkbox for the row 
@@ -113,7 +112,7 @@ while ($row = $result->fetch_assoc()) {
 }
 echo "</tbody></table>";
 echo "<script>$('#content-area').data('total-pages', $totalPages);</script>";
-// Show pagination info (optional)
+// Show pagination info 
 if ($limit !== 'ALL') {
   //  $totalPages = ceil($totalRows / $limit);
     echo "<p class='text-black small'>Page $page of $totalPages • $totalRows total rows</p>";

@@ -169,10 +169,34 @@ require_once 'db.php';
             </div>
 
             <ul class="d-flex justify-content-end list-unstyled m-0">
-              <li>
-                <a href="login.html" class="rounded-circle bg-light p-2 mx-1">
-                  <svg width="24" height="24" viewBox="0 0 24 24"><use xlink:href="#user"></use></svg>
+              <li class="nav-item dropdown position-relative">
+                <a 
+                  href="#" 
+                  class="rounded-circle bg-light p-2 mx-1" 
+                  id="userIcon" 
+                  role="button"
+                  data-bs-toggle="dropdown" 
+                  aria-expanded="false"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <use xlink:href="#user"></use>
+                  </svg>
                 </a>
+
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userIcon">
+                  <li><a class="dropdown-item" href="profile.html">Profile</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
+                  <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                    document.getElementById('logout')?.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      // Redirect to logout endpoint
+                      window.location.href = 'logout.php';
+                     });
+                    });
+                  </script>
+                </ul>
               </li>
               <li>
               <a href="#" class="rounded-circle bg-light p-2 mx-1 btn-wishlist">
@@ -229,36 +253,22 @@ require_once 'db.php';
               
                   <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
                     <li class="nav-item active">
-                      <a href="#women" class="nav-link">Women</a>
+                      <a href="#fruits" class="nav-link">Fruits</a>
                     </li>
                     <li class="nav-item dropdown">
-                      <a href="#men" class="nav-link">Men</a>
+                      <a href="#drinks" class="nav-link">Drinks</a>
                     </li>
                     <li class="nav-item">
-                      <a href="#kids" class="nav-link">Kids</a>
+                      <a href="#meat" class="nav-link">Meat</a>
                     </li>
                     <li class="nav-item">
-                      <a href="#accessories" class="nav-link">Accessories</a>
-                    </li>
-                    <li class="nav-item dropdown">
-                      <a class="nav-link dropdown-toggle" role="button" id="pages" data-bs-toggle="dropdown" aria-expanded="false">Pages</a>
-                      <ul class="dropdown-menu" aria-labelledby="pages">
-                        <li><a href="home.php" class="dropdown-item">About Us </a></li>
-                        <li><a href="home.php" class="dropdown-item">Shop </a></li>
-                        <li><a href="home.php" class="dropdown-item">Single Product </a></li>
-                        <li><a href="home.php" class="dropdown-item">Cart </a></li>
-                        <li><a href="home.php" class="dropdown-item">Checkout </a></li>
-                        <li><a href="home.php" class="dropdown-item">Blog </a></li>
-                        <li><a href="home.php" class="dropdown-item">Single Post </a></li>
-                        <li><a href="home.php" class="dropdown-item">Styles </a></li>
-                        <li><a href="home.php" class="dropdown-item">Contact </a></li>
-                        <li><a href="home.php" class="dropdown-item">Thank You </a></li>
-                        <li><a href="home.php" class="dropdown-item">My Account </a></li>
-                        <li><a href="home.php" class="dropdown-item">404 Error </a></li>
-                      </ul>
+                      <a href="#frozenfood" class="nav-link">Frozen food</a>
                     </li>
                     <li class="nav-item">
-                      <a href="#brand" class="nav-link">Brand</a>
+                      <a href="#household" class="nav-link">Household</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#personalcare" class="nav-link">Personal Care</a>
                     </li>
                     <li class="nav-item">
                       <a href="#sale" class="nav-link">Sale</a>
@@ -283,7 +293,8 @@ require_once 'db.php';
       <div class="container-fluid">
         <div class="row">
           <div class="col-md-12">
-
+           <div class="content-area overflow-x-hidden">  
+                  
             <div class="banner-blocks">
             
               <div class="banner-ad large bg-info block-1">
@@ -296,7 +307,7 @@ require_once 'db.php';
                         <div class="content-wrapper col-md-7">
                           <div class="categories my-3">100% natural</div>
                           <h3 class="display-4">Fresh Smoothie & Summer Juice</h3>
-                          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dignissim massa diam elementum.</p>
+                          <p></p>
                           <a href="#" class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1 px-4 py-3 mt-3">Shop Now</a>
                         </div>
                         <div class="img-wrapper col-md-5">
@@ -310,7 +321,7 @@ require_once 'db.php';
                         <div class="content-wrapper col-md-7">
                           <div class="categories mb-3 pb-3">100% natural</div>
                           <h3 class="banner-title">Fresh Smoothie & Summer Juice</h3>
-                          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dignissim massa diam elementum.</p>
+                          <p></p>
                           <a href="#" class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1">Shop Collection</a>
                         </div>
                         <div class="img-wrapper col-md-5">
@@ -324,7 +335,7 @@ require_once 'db.php';
                         <div class="content-wrapper col-md-7">
                           <div class="categories mb-3 pb-3">100% natural</div>
                           <h3 class="banner-title">Heinz Tomato Ketchup</h3>
-                          <p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Dignissim massa diam elementum.</p>
+                          <p></p>
                           <a href="#" class="btn btn-outline-dark btn-lg text-uppercase fs-6 rounded-1">Shop Collection</a>
                         </div>
                         <div class="img-wrapper col-md-5">
@@ -365,7 +376,9 @@ require_once 'db.php';
 
             </div>
             <!-- / Banner Blocks -->
-              
+             
+            </div>  
+             <!-- / content-area -->
           </div>
         </div>
       </div>
@@ -1522,7 +1535,7 @@ require_once 'db.php';
                   <h3 class="post-title">
                     <a href="#" class="text-decoration-none">Top 10 casual look ideas to dress up your kids</a>
                   </h3>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipi elit. Aliquet eleifend viverra enim tincidunt donec quam. A in arcu, hendrerit neque dolor morbi...</p>
+                  <p></p>
                 </div>
               </div>
             </article>
@@ -1543,7 +1556,7 @@ require_once 'db.php';
                   <h3 class="post-title">
                     <a href="#" class="text-decoration-none">Latest trends of wearing street wears supremely</a>
                   </h3>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipi elit. Aliquet eleifend viverra enim tincidunt donec quam. A in arcu, hendrerit neque dolor morbi...</p>
+                  <p></p>
                 </div>
               </div>
             </article>
@@ -1564,7 +1577,7 @@ require_once 'db.php';
                   <h3 class="post-title">
                     <a href="#" class="text-decoration-none">10 Different Types of comfortable clothes ideas for women</a>
                   </h3>
-                  <p>Lorem ipsum dolor sit amet, consectetur adipi elit. Aliquet eleifend viverra enim tincidunt donec quam. A in arcu, hendrerit neque dolor morbi...</p>
+                  <p></p>
                 </div>
               </div>
             </article>
@@ -1826,5 +1839,6 @@ require_once 'db.php';
     <script src="js/script.js"></script>
     <script src="js/shoppingCart.js"></script>
     <script src="js/wishlisthandle.js"></script>
+    <script src="js/getproducts.js"></script>
   </body>
 </html>

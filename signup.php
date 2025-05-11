@@ -3,21 +3,8 @@ header('Content-Type: application/json');
 ini_set('display_errors', 1);
 error_reporting(E_ALL);
 
-// Database connection details
-$servername = "localhost";
-$username = "root";
-$password = "";
-$dbname = "supermarket";
-
-// Create connection
-$conn = new mysqli($servername, $username, $password, $dbname);
-
-// Check connection
-if ($conn->connect_error) {
-    http_response_code(500);
-    echo json_encode(["error" => "Database connection failed."]);
-    exit();
-}
+// Include database connection
+require_once 'db.php';
 
 // Get and sanitize input
 $user_name = trim($_POST['username'] ?? '');

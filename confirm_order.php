@@ -4,9 +4,8 @@
 include 'db.php'; 
 
 // Get raw POST data
-
 $data = json_decode(file_get_contents("php://input"), true);
-//$order_id = intval($data['order_id']);
+
 // Enable exception reporting for MySQLi
 mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
 

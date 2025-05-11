@@ -439,7 +439,10 @@ function handleOrderPHP(mysqli $conn, int $product_id, int $quantity, int $wareh
             // Warehouse receiving from supplier
             
             // Get order price
-            $stmt = $conn->prepare("SELECT price FROM orders WHERE product_id = ? AND warehouse_id = ? AND status = 'confirmed' ORDER BY order_date DESC LIMIT 1");
+            //$stmt = $conn->prepare("SELECT price FROM orders WHERE product_id = ? AND warehouse_id = ? AND status = 'confirmed' ORDER BY order_date DESC LIMIT 1");
+            $stmt = $conn->prepare("SELECT price FROM orders WHERE product_id = ? AND source_id = ? 
+                                    AND source_type = 'warehouse' AND status = 'confirmed' 
+                                    ORDER BY order_date DESC LIMIT 1");
             if (!$stmt) throw new Exception($conn->error);
             $stmt->bind_param("ii", $product_id, $warehouse_id);
             if (!$stmt->execute()) throw new Exception($stmt->error);
@@ -507,7 +510,6 @@ function processConfirmedOrders(mysqli $conn, $selectedDate) {
     $result = $stmt->get_result(); // Use get_result to fetch the result
 
     if ($result && $result->num_rows > 0) {
-        //$proc_stmt = $conn->prepare("CALL handle_order(?, ?, ?, ?, ?, ?)");
 
         while ($row = $result->fetch_assoc()) {
             $product_id = (int)$row['product_id'];
@@ -518,7 +520,6 @@ function processConfirmedOrders(mysqli $conn, $selectedDate) {
 
             // If warehouse_id is NULL, build it from source_type + source_id
             if (is_null($row['warehouse_id'])) {
-                // Example: convert 'store' + 5 → 5005, or some other logic
                 if ($source_type === 'warehouse') {
                     $warehouse_id = $source_id; // Set warehouse_id to source_id when source_type is 'warehouse'
                 }
@@ -526,26 +527,15 @@ function processConfirmedOrders(mysqli $conn, $selectedDate) {
                 $warehouse_id = (int)$row['warehouse_id'];
             }
             handleOrderPHP($conn, $product_id, $quantity, $warehouse_id, $source_id, $source_type, $is_auto_triggered, $selectedDate);
-            //$proc_stmt->bind_param("iiiisi", $product_id, $quantity, $warehouse_id, $source_id, $source_type, $is_auto_triggered);
-             // Execute the stored procedure
-             //if ($proc_stmt->execute()) {
-          //      echo "<p class='text-black'>Processed order quantity (Quantity: $quantity) for Product '$product_id' in '$source_type' ID '$source_id'.</p>";
-          //  } else {
-          //      echo "<p class='text-danger'>Error processing order for Product '$product_id'.</p>";
-          //  }
         }
         
         // Echo result
-       // echo "<p class='text-black'>Processed order quantity (Quantity: $quantity) for Product '$product_id' in '$source_type' ID '$source_id'.</p>";
-       //$proc_stmt->close();
         echo "All confirmed orders processed.<br>";
-        // Prepare the stored procedure call
 
     } else {
         echo " No confirmed orders found.<br>";
     }
 }
-
 
 // Main logic
 try {

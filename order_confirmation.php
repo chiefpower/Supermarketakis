@@ -303,54 +303,40 @@ $stmt->close();
 
               <div class="offcanvas-body">
 
-                <select class="filter-categories border-0 mb-0 me-5">
-                  <option>Shop by Departments</option>
-                  <option>Groceries</option>
-                  <option>Drinks</option>
-                  <option>Chocolates</option>
-                </select>
-
-                <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
-                  <li class="nav-item active">
-                    <a href="#women" class="nav-link">Women</a>
-                  </li>
-                  <li class="nav-item dropdown">
-                    <a href="#men" class="nav-link">Men</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#kids" class="nav-link">Kids</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#accessories" class="nav-link">Accessories</a>
-                  </li>
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="pages" data-bs-toggle="dropdown"
-                      aria-expanded="false">Pages</a>
-                    <ul class="dropdown-menu" aria-labelledby="pages">
-                      <li><a href="index.php" class="dropdown-item">About Us </a></li>
-                      <li><a href="index.php" class="dropdown-item">Shop </a></li>
-                      <li><a href="index.php" class="dropdown-item">Single Product </a></li>
-                      <li><a href="index.php" class="dropdown-item">Cart </a></li>
-                      <li><a href="index.php" class="dropdown-item">Checkout </a></li>
-                      <li><a href="index.php" class="dropdown-item">Blog </a></li>
-                      <li><a href="index.php" class="dropdown-item">Single Post </a></li>
-                      <li><a href="index.php" class="dropdown-item">Styles </a></li>
-                      <li><a href="index.php" class="dropdown-item">Contact </a></li>
-                      <li><a href="index.php" class="dropdown-item">Thank You </a></li>
-                      <li><a href="index.php" class="dropdown-item">My Account </a></li>
-                      <li><a href="index.php" class="dropdown-item">404 Error </a></li>
-                    </ul>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#brand" class="nav-link">Brand</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#sale" class="nav-link">Sale</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#blog" class="nav-link">Blog</a>
-                  </li>
-                </ul>
+               <select class="filter-categories border-0 mb-0 me-5">
+                    <option>Shop by Departments</option>
+                    <option>Groceries</option>
+                    <option>Drinks</option>
+                    <option>Household</option>
+                   <option>Personal Care</option>
+                  </select>
+              
+                  <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
+                    <li class="nav-item active">
+                      <a href="#fruits" class="nav-link">Fruits</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                      <a href="#drinks" class="nav-link">Drinks</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#meat" class="nav-link">Meat</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#frozenfood" class="nav-link">Frozen food</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#household" class="nav-link">Household</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#personalcare" class="nav-link">Personal Care</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#sale" class="nav-link">Sale</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#blog" class="nav-link">Blog</a>
+                    </li>
+                  </ul>
 
               </div>
 
@@ -591,6 +577,8 @@ $stmt->close();
   <script src="js/script.js"></script>
   <script src="js/shoppingCart.js"></script>
   <script src="js/confirmorder.js"></script>
+  <script src="js/getproducts.js"></script>
+  <script src="js/ncart.js"></script>
 </body>
 
 </html>

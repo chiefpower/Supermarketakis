@@ -114,7 +114,7 @@ require_once 'db.php';
               <strong id="cart-total">€0</strong>
             </li>
           </ul>
-          <a href="pcheckout.html" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
+          <a href="pcheckout.php" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
           
         </div>
       </div>
@@ -193,7 +193,7 @@ require_once 'db.php';
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userIcon">
-                  <li><a class="dropdown-item" href="profile.html">Profile</a></li>
+                  <li><a class="dropdown-item" href="profile.php">Profile</a></li>
                   <li><hr class="dropdown-divider"></li>
                   <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
                   <script>

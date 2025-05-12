@@ -1808,5 +1808,6 @@ require_once 'db.php';
     <script src="js/shoppingCart.js"></script>
     <script src="js/wishlisthandle.js"></script>
     <script src="js/getproducts.js"></script>
+    <script src="js/ncart.js"></script>
   </body>
 </html>

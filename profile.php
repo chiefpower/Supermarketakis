@@ -1,8 +1,47 @@
+<?php
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
+  // If not logged in, redirect to login page
+  header('Location: login.html');  
+  exit;
+}
+require_once 'db.php';
+
+$user_id = $_SESSION['user_id'] ?? null;
+$profile = [];
+
+if ($user_id) {
+// Join users (for email) and user_profiles (for other fields)                        
+  $stmt = $conn->prepare("
+      SELECT 
+          u.email, 
+          up.first_name, 
+          up.last_name, 
+          up.phone, 
+          up.address_line_1, 
+          up.address_line_2, 
+          up.country, 
+          up.zip_code, 
+          up.preferred_store_id
+        FROM users u
+        JOIN user_profiles up ON u.id = up.user_id
+        WHERE u.id = ?
+      ");
+  $stmt->bind_param("i", $user_id);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $profile = $result->fetch_assoc();
+  $stmt->close();
+}
+
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <title>Supermarketakis - Login</title>
+  <title>Supermarketakis - Profile</title>
   <meta charset="utf-8">
   <meta http-equiv="X-UA-Compatible" content="IE=edge">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -113,7 +152,7 @@
             <strong id="cart-total">€0</strong>
           </li>
         </ul>
-        <a href="checkout.html" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
+        <a href="pcheckout.php" class="w-100 btn btn-primary btn-lg">Continue to checkout</a>
 
       </div>
     </div>
@@ -183,12 +222,34 @@
           </div>
 
           <ul class="d-flex justify-content-end list-unstyled m-0">
-            <li>
-              <a href="login.html" class="rounded-circle bg-light p-2 mx-1">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <use xlink:href="#user"></use>
-                </svg>
-              </a>
+           <li class="nav-item dropdown position-relative">
+                <a 
+                  href="#" 
+                  class="rounded-circle bg-light p-2 mx-1" 
+                  id="userIcon" 
+                  role="button"
+                  data-bs-toggle="dropdown" 
+                  aria-expanded="false"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <use xlink:href="#user"></use>
+                  </svg>
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userIcon">
+                  <li><a class="dropdown-item" href="profile.php">Profile</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
+                  <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                    document.getElementById('logout')?.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      // Redirect to logout endpoint
+                      window.location.href = 'logout.php';
+                     });
+                    });
+                  </script>
+                </ul>
             </li>
             <li>
               <a href="#" class="rounded-circle bg-light p-2 mx-1">
@@ -293,103 +354,116 @@
     <div class="container-fluid">
       <div class="row">
         <div class="col-md-12">
-          <div class="banner-ad bg-success-subtle block-2"
-            style="background:url('images/ad-image-1.png') no-repeat;background-position: right bottom">
+          <div class="banner-ad bg-danger-subtle block-2"
+            style="background:url('images/ad-image-2.png') no-repeat;background-position: right bottom">
             <div class="row banner-content p-5">
 
-              <!-- Left Section -->
-              <div class="col-md-4">
-                <div class="content-wrapper">
-                  <h6>Login to your account</h6>
-                  <p>Don't have an account? <a href="signup.html">Sign Up!</a></p>
-                  <!-- Message box -->
+             <!-- Full-Screen Centered Form Section -->
+             <div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center ">
+
+                 <!-- Left Section (Centered) -->
+                 <div class="col-md-6 col-lg-5 d-flex flex-column justify-content-center text-black border border-2 border-black p-4 shadow">
+                   <div>
+                     <div class="text-center">
+                       <p class="mb-3 fs-5">Profile details for user <?php echo htmlspecialchars($_SESSION['username']); ?></p>
+                     </div>
+
+                     <!-- Purchase Form -->
+                      <form id="userorderform" method="POST">
+                     <!-- Name and Last Name -->
+                     <div class="row mb-3">
+                       <div class="col">
+                         <label for="firstName" class="form-label">Name</label>
+                         <input type="text" class="form-control" id="firstName" name="firstName" required
+                           value="<?= htmlspecialchars($profile['first_name'] ?? '') ?>">
+                       </div>
+                       <div class="col">
+                         <label for="lastName" class="form-label">Last Name</label>
+                         <input type="text" class="form-control" id="lastName" name="lastName" required
+                           value="<?= htmlspecialchars($profile['last_name'] ?? '') ?>">
+                       </div>
+                     </div>
+
+                     <!-- Email and Phone -->
+                     <div class="row mb-3">
+                       <div class="col">
+                         <label for="email" class="form-label">Email Address</label>
+                         <input type="email" class="form-control" id="email" name="email" required
+                           value="<?= htmlspecialchars($profile['email'] ?? '') ?>">
+                       </div>
+                       <div class="col">
+                         <label for="phone" class="form-label">Phone Number</label>
+                         <input type="tel" class="form-control" id="phone" name="phone"
+                           pattern="^\+(\d{2} \d{10}|\d{3} \d{9}|\d{12})$" placeholder="e.g., +1 234 567 890" required
+                           value="<?= htmlspecialchars($profile['phone'] ?? '') ?>">
+                       </div>
+                     </div>
+
+                     <!-- Shipping Address -->
+                     <div class="mb-3">
+                       <label for="addressLine1" class="form-label">Shipping Address</label>
+                       <input type="text" class="form-control" id="addressLine1" name="addressLine1" required
+                         value="<?= htmlspecialchars($profile['address_line_1'] ?? '') ?>">
+                     </div>
+
+                     <!-- Address Line 2 -->
+                     <div class="mb-3">
+                       <label for="addressLine2" class="form-label">Address Line 2 (Optional)</label>
+                       <input type="text" class="form-control" id="addressLine2" name="addressLine2"
+                         value="<?= htmlspecialchars($profile['address_line_2'] ?? '') ?>">
+                     </div>
+
+                     <!-- Country and Zip -->
+                     <div class="row mb-3">
+                       <div class="col">
+                         <label for="country" class="form-label">Country</label>
+                         <select class="form-select" id="country" name="country" required>
+                           <option value="">Select a Country</option>
+                           <option value="USA" <?= ($profile['country'] ?? '') === 'USA' ? 'selected' : '' ?>>USA</option>
+                           <option value="Canada" <?= ($profile['country'] ?? '') === 'Canada' ? 'selected' : '' ?>>Canada</option>
+                           <!-- Add more countries as needed -->
+                         </select>
+                       </div>
+                       <div class="col">
+                         <label for="zipCode" class="form-label">Zip Code</label>
+                         <input type="text" class="form-control" id="zipCode" name="zipCode" required
+                           value="<?= htmlspecialchars($profile['zip_code'] ?? '') ?>">
+                       </div>
+                     </div>
+
+                     <!-- Notes -->
+                     <div class="mb-3">
+                       <label for="notes" class="form-label">Additional Notes (Optional)</label>
+                       <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                     </div>
+
+                     <!-- Preferred Store -->
+                     <div class="mb-3">
+                       <label for="preferredStore" class="form-label">Preferred Store (Optional)</label>
+                       <select class="form-select" id="preferredStore" name="preferred_store_id">
+                         <option value="">-- Select Store (Optional) --</option>
+                         <?php
+                         $storeQuery = "SELECT store_id, name FROM stores ORDER BY name";
+                         $storeResult = $conn->query($storeQuery);
+                         while ($store = $storeResult->fetch_assoc()) {
+                           $selected = ($profile['preferred_store_id'] ?? '') == $store['store_id'] ? 'selected' : '';
+                           echo "<option value='" . htmlspecialchars($store['store_id']) . "' $selected>" . htmlspecialchars($store['name']) . "</option>";
+                         }
+                         ?>
+                       </select>
+                     </div>
+
+                     <!-- Submit -->
+                     <div class="text-center">
+                       <button type="submit" class="btn btn-primary">Continue</button>
+                     </div>
+                   </form>
                   <div id="message" class="mt-3"></div>
-                </div>
-              </div>
+                   </div>
+                 </div>
+  
+             </div> 
 
-              <!-- Center Section -->
-              <div class="col-md-4">
-                <div class="content-wrapper">
-                  <!-- Username and Password Input Fields -->
-
-                  <form id="login-form" action="login.php" method="POST">
-                    <div class="mb-3">
-                      <h6><label for="username" class="form-label">Username</label></h6>
-                      <input type="text" class="form-control" id="username" name="username"
-                        placeholder="Enter your username or email" required>
-                    </div>
-                    <div class="mb-3">
-                      <h6><label for="password" class="form-label">Password</label></h6>
-                      <input type="password" class="form-control" id="password" name="password"
-                        placeholder="Enter your password" required>
-                    </div>
-
-                    <div class="d-flex align-items-center" style="gap: 10px;">
-                      <button type="submit" class="btn btn-primary">Login</button>
-                      <a href="#" class="text-decoration-none" style="font-size: 0.875rem; color: #007bff;">Forgot your
-                        password?</a>
-                    </div>
-                  </form>
-
-                  <script>
-                    document.getElementById('login-form').addEventListener('submit', async function (event) {
-                      event.preventDefault();
-
-                      const username = document.getElementById('username').value.trim();
-                      const password = document.getElementById('password').value.trim();
-
-                      const messageBox = document.getElementById('message');
-                      messageBox.innerHTML = "";
-
-                      if (!username || !password) {
-                        messageBox.innerHTML = `<div class="alert alert-danger">Please enter both username and password.</div>`;
-                        return;
-                      }
-
-                      document.querySelector('#login-form').addEventListener('submit', async (e) => {
-                        e.preventDefault();
-
-                        const messageBox = document.querySelector('#message'); // This exists for feedback
-                        const form = document.querySelector('#login-form');
-                        const formData = new FormData(form);
-
-                        // Include the redirect URL from localStorage
-                        const redirectUrl = localStorage.getItem('redirectAfterLogin');
-                        formData.append('redirectAfterLogin', redirectUrl || 'home.php');
-
-                        try {
-                          const response = await fetch('login.php', {
-                            method: 'POST',
-                            headers: {
-                              'X-Requested-With': 'XMLHttpRequest' // Tells PHP this is an AJAX request
-                            },
-                            body: formData
-                          });
-
-                          const result = await response.json();
-
-                          if (response.ok && result.success) {
-                            if (result.redirect) {
-                              localStorage.removeItem('redirectAfterLogin');
-                              window.location.href = result.redirect;
-                            } else {
-                              messageBox.innerHTML = `<div class="alert alert-success">${result.success}</div>`;
-                            }
-                          } else {
-                            messageBox.innerHTML = `<div class="alert alert-danger">${result.error || 'Login failed. Please try again.'}</div>`;
-                          }
-                        } catch (err) {
-                          console.error('Login failed:', err);
-                          messageBox.innerHTML = `<div class="alert alert-danger">Request failed: ${err.message}</div>`;
-                        }
-                      });
-
-                    });
-                  </script>
-
-                </div>
-              </div>
-              <!-- / Center Section -->
 
             </div>
           </div>

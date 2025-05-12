@@ -4,7 +4,7 @@ import { emptyCart } from './testcart.js';
 document.addEventListener("DOMContentLoaded", function () {
     const form = document.getElementById("userorderform");
     const messageBox = document.getElementById("message");
-    messageBox.innerHTML = "";
+   // messageBox.innerHTML = "";
 
     form.addEventListener("submit", function (e) {
         e.preventDefault(); // Prevent default form submission

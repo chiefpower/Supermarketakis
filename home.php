@@ -184,7 +184,7 @@ require_once 'db.php';
                 </a>
 
                 <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userIcon">
-                  <li><a class="dropdown-item" href="profile.html">Profile</a></li>
+                  <li><a class="dropdown-item" href="profile.php">Profile</a></li>
                   <li><hr class="dropdown-divider"></li>
                   <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
                   <script>
@@ -1840,5 +1840,6 @@ require_once 'db.php';
     <script src="js/shoppingCart.js"></script>
     <script src="js/wishlisthandle.js"></script>
     <script src="js/getproducts.js"></script>
+    <script src="js/ncart.js"></script>
   </body>
 </html>

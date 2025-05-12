@@ -1,3 +1,43 @@
+<?php
+session_start();
+
+// Check if the user is logged in
+if (!isset($_SESSION['logged_in']) || !$_SESSION['logged_in']) {
+  // If not logged in, redirect to login page
+  header('Location: login.html');  
+  exit;
+}
+require_once 'db.php';
+
+$user_id = $_SESSION['user_id'] ?? null;
+$profile = [];
+
+if ($user_id) {
+// Join users (for email) and user_profiles (for other fields)                         
+  $stmt = $conn->prepare("
+      SELECT 
+          u.email, 
+          up.first_name, 
+          up.last_name, 
+          up.phone, 
+          up.address_line_1, 
+          up.address_line_2, 
+          up.country, 
+          up.zip_code, 
+          up.preferred_store_id
+        FROM users u
+        JOIN user_profiles up ON u.id = up.user_id
+        WHERE u.id = ?
+      ");
+  $stmt->bind_param("i", $user_id);
+  $stmt->execute();
+  $result = $stmt->get_result();
+  $profile = $result->fetch_assoc();
+  $stmt->close();
+}
+//print_r($profile);
+                   
+?>
 <!DOCTYPE html>
 <html lang="en">
 
@@ -183,13 +223,35 @@
           </div>
 
           <ul class="d-flex justify-content-end list-unstyled m-0">
-            <li>
-              <a href="login.html" class="rounded-circle bg-light p-2 mx-1">
-                <svg width="24" height="24" viewBox="0 0 24 24">
-                  <use xlink:href="#user"></use>
-                </svg>
-              </a>
-            </li>
+             <li class="nav-item dropdown position-relative">
+                <a 
+                  href="#" 
+                  class="rounded-circle bg-light p-2 mx-1" 
+                  id="userIcon" 
+                  role="button"
+                  data-bs-toggle="dropdown" 
+                  aria-expanded="false"
+                >
+                  <svg width="24" height="24" viewBox="0 0 24 24">
+                    <use xlink:href="#user"></use>
+                  </svg>
+                </a>
+
+                <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userIcon">
+                  <li><a class="dropdown-item" href="profile.php">Profile</a></li>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item" href="#" id="logout">Logout</a></li>
+                  <script>
+                    document.addEventListener('DOMContentLoaded', () => {
+                    document.getElementById('logout')?.addEventListener('click', (e) => {
+                      e.preventDefault();
+                      // Redirect to logout endpoint
+                      window.location.href = 'logout.php';
+                     });
+                    });
+                  </script>
+                </ul>
+              </li>
             <li>
               <a href="#" class="rounded-circle bg-light p-2 mx-1">
                 <svg width="24" height="24" viewBox="0 0 24 24">
@@ -246,53 +308,39 @@
               <div class="offcanvas-body">
 
                 <select class="filter-categories border-0 mb-0 me-5">
-                  <option>Shop by Departments</option>
-                  <option>Groceries</option>
-                  <option>Drinks</option>
-                  <option>Chocolates</option>
-                </select>
-
-                <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
-                  <li class="nav-item active">
-                    <a href="#women" class="nav-link">Women</a>
-                  </li>
-                  <li class="nav-item dropdown">
-                    <a href="#men" class="nav-link">Men</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#kids" class="nav-link">Kids</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#accessories" class="nav-link">Accessories</a>
-                  </li>
-                  <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle" role="button" id="pages" data-bs-toggle="dropdown"
-                      aria-expanded="false">Pages</a>
-                    <ul class="dropdown-menu" aria-labelledby="pages">
-                      <li><a href="index.php" class="dropdown-item">About Us </a></li>
-                      <li><a href="index.php" class="dropdown-item">Shop </a></li>
-                      <li><a href="index.php" class="dropdown-item">Single Product </a></li>
-                      <li><a href="index.php" class="dropdown-item">Cart </a></li>
-                      <li><a href="index.php" class="dropdown-item">Checkout </a></li>
-                      <li><a href="index.php" class="dropdown-item">Blog </a></li>
-                      <li><a href="index.php" class="dropdown-item">Single Post </a></li>
-                      <li><a href="index.php" class="dropdown-item">Styles </a></li>
-                      <li><a href="index.php" class="dropdown-item">Contact </a></li>
-                      <li><a href="index.php" class="dropdown-item">Thank You </a></li>
-                      <li><a href="index.php" class="dropdown-item">My Account </a></li>
-                      <li><a href="index.php" class="dropdown-item">404 Error </a></li>
-                    </ul>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#brand" class="nav-link">Brand</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#sale" class="nav-link">Sale</a>
-                  </li>
-                  <li class="nav-item">
-                    <a href="#blog" class="nav-link">Blog</a>
-                  </li>
-                </ul>
+                    <option>Shop by Departments</option>
+                    <option>Groceries</option>
+                    <option>Drinks</option>
+                    <option>Household</option>
+                   <option>Personal Care</option>
+                  </select>
+              
+                  <ul class="navbar-nav justify-content-end menu-list list-unstyled d-flex gap-md-3 mb-0">
+                    <li class="nav-item active">
+                      <a href="#fruits" class="nav-link">Fruits</a>
+                    </li>
+                    <li class="nav-item dropdown">
+                      <a href="#drinks" class="nav-link">Drinks</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#meat" class="nav-link">Meat</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#frozenfood" class="nav-link">Frozen food</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#household" class="nav-link">Household</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#personalcare" class="nav-link">Personal Care</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#sale" class="nav-link">Sale</a>
+                    </li>
+                    <li class="nav-item">
+                      <a href="#blog" class="nav-link">Blog</a>
+                    </li>
+                  </ul>
 
               </div>
 
@@ -309,115 +357,110 @@
         <div class="col-md-12">
           <div class="banner-ad bg-success-subtle block-2"></div>
             
-           <div class="banner-ad large bg-info block-1 p-4" style="background:url('images/pngwing.com.png') no-repeat;background-position: right bottom; background-size: 65vw auto;">
+           <div class="banner-ad large bg-info block-1 p-4" style="background:url('images/pngwing.com.png') no-repeat;background-position: right bottom; background-size: 50vw auto;">
             <div class="row">
-
+                    
               <!-- Left Section -->
               <div
-                class="col-md-6 d-flex align-items-center justify-content-center text-black border-end border-2 border-black pe-4">
+                class="container-fluid min-vh-100 d-flex align-items-center justify-content-center text-black pe-4">
                 <div>
                   <div class="text-center">
-                     <p class="mb-3 fs-5">Continue without an account?</p>
+                     <p class="mb-3 fs-5">Profile details for user <?php echo htmlspecialchars($_SESSION['username']); ?></p>
                   </div>
                   <!-- Purchase Form action="process_checkout.php"-->
-                  <form id="userorderform"  method="POST">
-                    <!-- Name and Last Name -->
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="firstName" class="form-label">Name</label>
-                        <input type="text" class="form-control" id="firstName" name="firstName" required>
-                      </div>
-                      <div class="col">
-                        <label for="lastName" class="form-label">Last Name</label>
-                        <input type="text" class="form-control" id="lastName" name="lastName" required>
-                      </div>
-                    </div>
-                  
-                    <!-- Email and Phone -->
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="email" class="form-label">Email Address</label>
-                        <input type="email" class="form-control" id="email" name="email" required>
-                      </div>
-                      <div class="col">
-                        <label for="phone" class="form-label">Phone Number</label>
-                        <input type="tel" class="form-control" id="phone" name="phone" pattern="^\+(\d{2} \d{10}|\d{3} \d{9}|\d{12})$" placeholder="e.g., +1 234 567 890" required>
-                      </div>
-                    </div>
-                  
-                    <!-- Shipping Address Line 1 and Line 2 -->
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="addressLine1" class="form-label">Shipping Address</label>
-                        <input type="text" class="form-control" id="addressLine1" name="addressLine1" required>
-                      </div>
-                    </div>
-                  
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="addressLine2" class="form-label">Address Line 2 (Optional)</label>
-                        <input type="text" class="form-control" id="addressLine2" name="addressLine2">
-                      </div>
-                    </div>
-                  
-                    <!-- Country and State Dropdowns -->
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="country" class="form-label">Country</label>
-                        <select class="form-select" id="country" name="country" required>
-                          <option value="">Select a Country</option>
-                        </select>
-                      </div>
-                      <div class="col">
-                        <label for="zipCode" class="form-label">Zip Code</label>
-                        <input type="text" class="form-control" id="zipCode" name="zipCode" required placeholder="Enter zip code">
-                      </div>
-                    </div>
-                  
-                    <!-- Optional Notes and Promo Code -->
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="notes" class="form-label">Additional Notes (Optional)</label>
-                        <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
-                      </div>
-                    </div>
-                  
-                    <div class="row mb-3">
-                      <div class="col">
-                        <label for="preferredStore" class="form-label">Preferred Store (Optional)</label>
-                        <select class="form-select" id="preferredStore" name="preferred_store_id">
-                          <option value="">-- Select Store (Optional) --</option>
-                          <?php
-                            $storeQuery = "SELECT store_id, name FROM stores ORDER BY name";
-                            $storeResult = $conn->query($storeQuery);
-                            while ($store = $storeResult->fetch_assoc()) {
-                              echo "<option value='" . htmlspecialchars($store['store_id']) . "'>" . htmlspecialchars($store['name']) . "</option>";
-                            }
-                          ?>
-                        </select>
-                      </div>
-                    </div>
-                  
-                    <div class="text-center">
-                      <button type="submit" class="btn btn-primary">Continue</button>
-                    </div>
-                  </form>
-                  
-                  <!-- JavaScript for Dynamic Country Dropdown -->
-                  
-                                  
-                  
+                   <form id="userorderform" method="POST">
+                     <!-- Name and Last Name -->
+                     <div class="row mb-3">
+                       <div class="col">
+                         <label for="firstName" class="form-label">Name</label>
+                         <input type="text" class="form-control" id="firstName" name="firstName" required
+                           value="<?= htmlspecialchars($profile['first_name'] ?? '') ?>">
+                       </div>
+                       <div class="col">
+                         <label for="lastName" class="form-label">Last Name</label>
+                         <input type="text" class="form-control" id="lastName" name="lastName" required
+                           value="<?= htmlspecialchars($profile['last_name'] ?? '') ?>">
+                       </div>
+                     </div>
+
+                     <!-- Email and Phone -->
+                     <div class="row mb-3">
+                       <div class="col">
+                         <label for="email" class="form-label">Email Address</label>
+                         <input type="email" class="form-control" id="email" name="email" required
+                           value="<?= htmlspecialchars($profile['email'] ?? '') ?>">
+                       </div>
+                       <div class="col">
+                         <label for="phone" class="form-label">Phone Number</label>
+                         <input type="tel" class="form-control" id="phone" name="phone"
+                           pattern="^\+(\d{2} \d{10}|\d{3} \d{9}|\d{12})$" placeholder="e.g., +1 234 567 890" required
+                           value="<?= htmlspecialchars($profile['phone'] ?? '') ?>">
+                       </div>
+                     </div>
+
+                     <!-- Shipping Address -->
+                     <div class="mb-3">
+                       <label for="addressLine1" class="form-label">Shipping Address</label>
+                       <input type="text" class="form-control" id="addressLine1" name="addressLine1" required
+                         value="<?= htmlspecialchars($profile['address_line_1'] ?? '') ?>">
+                     </div>
+
+                     <!-- Address Line 2 -->
+                     <div class="mb-3">
+                       <label for="addressLine2" class="form-label">Address Line 2 (Optional)</label>
+                       <input type="text" class="form-control" id="addressLine2" name="addressLine2"
+                         value="<?= htmlspecialchars($profile['address_line_2'] ?? '') ?>">
+                     </div>
+
+                     <!-- Country and Zip -->
+                     <div class="row mb-3">
+                       <div class="col">
+                         <label for="country" class="form-label">Country</label>
+                         <select class="form-select" id="country" name="country" required>
+                           <option value="">Select a Country</option>
+                           <option value="USA" <?= ($profile['country'] ?? '') === 'USA' ? 'selected' : '' ?>>USA</option>
+                           <option value="Canada" <?= ($profile['country'] ?? '') === 'Canada' ? 'selected' : '' ?>>Canada</option>
+                           <!-- Add more countries as needed -->
+                         </select>
+                       </div>
+                       <div class="col">
+                         <label for="zipCode" class="form-label">Zip Code</label>
+                         <input type="text" class="form-control" id="zipCode" name="zipCode" required
+                           value="<?= htmlspecialchars($profile['zip_code'] ?? '') ?>">
+                       </div>
+                     </div>
+
+                     <!-- Notes -->
+                     <div class="mb-3">
+                       <label for="notes" class="form-label">Additional Notes (Optional)</label>
+                       <textarea class="form-control" id="notes" name="notes" rows="3"></textarea>
+                     </div>
+
+                     <!-- Preferred Store -->
+                     <div class="mb-3">
+                       <label for="preferredStore" class="form-label">Preferred Store (Optional)</label>
+                       <select class="form-select" id="preferredStore" name="preferred_store_id">
+                         <option value="">-- Select Store (Optional) --</option>
+                         <?php
+                         $storeQuery = "SELECT store_id, name FROM stores ORDER BY name";
+                         $storeResult = $conn->query($storeQuery);
+                         while ($store = $storeResult->fetch_assoc()) {
+                           $selected = ($profile['preferred_store_id'] ?? '') == $store['store_id'] ? 'selected' : '';
+                           echo "<option value='" . htmlspecialchars($store['store_id']) . "' $selected>" . htmlspecialchars($store['name']) . "</option>";
+                         }
+                         ?>
+                       </select>
+                     </div>
+
+                     <!-- Submit -->
+                     <div class="text-center">
+                       <button type="submit" class="btn btn-primary">Continue</button>
+                     </div>
+                   </form>
+                  <div id="message" class="mt-3"></div>
                 </div>
               </div>
-              <!-- / Left Section -->
-
-              <!-- Right Section -->
-              
-              <div class="col-md-6 d-flex flex-column align-items-center justify-content-start text-black">
-                <p class="mb-3 fs-5">Already have an account?</p>
-                <a href="login.html" class="btn btn-primary" id="loginBtn">Login</a>
-                <div id="message" class="mt-3"></div>
-              </div>
+              <!-- / Left Section -->           
               
               <script>
                 document.getElementById('loginBtn').addEventListener('click', function () {
@@ -582,6 +625,8 @@
   <script src="js/countrynames.js"></script>
   <script type="module" src="js/checkoutlogic.js"></script>
   <script type="module" src="js/testcart.js"></script>
+  <script src="js/getproducts.js"></script>
+  <script src="js/ncart.js"></script>
 </body>
 
 </html>

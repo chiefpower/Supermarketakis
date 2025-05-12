@@ -1,4 +1,8 @@
-$(document).ready(function() {
+//import { addToCart } from './testcart.js';
+//import { getCart } from './testcart.js';
+//$(document).ready(function() {
+document.addEventListener("DOMContentLoaded", function () {
+   const cart = getCart();
 
     document.querySelector('a[href="#fruits"]').addEventListener('click', function(e) {
      e.preventDefault();
@@ -65,4 +69,7 @@ $(document).ready(function() {
        })
        .catch(error => console.error('Failed to load products:', error));
     });
+
+    
+
 });

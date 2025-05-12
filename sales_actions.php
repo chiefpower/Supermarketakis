@@ -185,24 +185,100 @@ function processUserOrderReductions($conn, $selectedDate) {
             while ($row = $result->fetch_assoc()) {
                 $store_id = $row['store_id'];
                 $product_id = $row['product_id'];
-                $quantity_to_reduce = $row['quantity_ordered'];
-                $old_quantity = $row['current_quantity'];
+                $ordered_quantity = $row['quantity_ordered'];
+                $available_quantity = $row['current_quantity'];
 
                 // Get names
                 $product_name = getProductName($conn, $product_id);
                 $store_name = getStoreName($conn, $store_id);
 
+                $reduced_from_primary = min($available_quantity, $ordered_quantity);
+                $remaining_quantity = $ordered_quantity - $reduced_from_primary;
+
                 // Reduce the quantity in the inventory
-                $update = $conn->prepare("
-                    UPDATE store_inventory
-                    SET quantity = quantity - ?
-                    WHERE store_id = ? AND product_id = ? AND quantity >= ?
-                ");
-                $update->bind_param("iiii", $quantity_to_reduce, $store_id, $product_id, $quantity_to_reduce);
-            
-                if ($update->execute()) {
+                // Reduce from primary store
+                if ($reduced_from_primary > 0) {
+                    $update = $conn->prepare("
+                        UPDATE store_inventory
+                        SET quantity = quantity - ?
+                        WHERE store_id = ? AND product_id = ? AND quantity >= ?
+                    ");
+                    $update->bind_param("iiii", $reduced_from_primary, $store_id, $product_id, $reduced_from_primary);
+                    $update->execute();
                     $update->close();
-            
+
+                    //echo "<p class='text-black'>Reduced $reduced_from_primary from Store '$store_name' for Product '$product_name'.</p>";
+                    echo "<p class='text-black'>Reduced quantity (Old Quantity: $available_quantity) for Product '$product_name' in Store '$store_name' by $reduced_from_primary.</p>";
+                    $reductionsPerformed = true;
+                }else {
+                    echo "<p class='text-danger'>Not enough inventory to fully fulfill Product '$product_name'. Only $reduced_from_primary out of $ordered_quantity was reduced from '$store_name'.</p>";
+                }
+
+                // If there is still remaining quantity, find another store with the highest quantity
+                if ($remaining_quantity > 0) {
+                    $stmt2 = $conn->prepare("
+                        SELECT store_id, quantity 
+                        FROM store_inventory 
+                        WHERE product_id = ? AND store_id != ? AND quantity > 0 
+                        ORDER BY quantity DESC
+                    ");
+                    $stmt2->bind_param("ii", $product_id, $store_id);
+                    $stmt2->execute();
+                    $altStores = $stmt2->get_result();
+                    $stmt2->close();
+
+                    $total_reduced = $reduced_from_primary;
+    
+                    while (($altStore = $altStores->fetch_assoc()) && $remaining_quantity > 0) {
+                        $alt_store_id = $altStore['store_id'];
+                        $alt_store_qty = $altStore['quantity'];
+                        $alt_store_name = getStoreName($conn, $alt_store_id);
+
+                        $reduce_now = min($alt_store_qty, $remaining_quantity);
+
+                        $update = $conn->prepare("
+                            UPDATE store_inventory
+                            SET quantity = quantity - ?
+                            WHERE store_id = ? AND product_id = ? AND quantity >= ?
+                        ");
+                        $update->bind_param("iiii", $reduce_now, $alt_store_id, $product_id, $reduce_now);
+                        $update->execute();
+                        $update->close();
+                        //echo "<p class='text-black'>Reduced quantity (Old Quantity: $alt_store_qty ) for Product '$product_name' in Store '$store_name' by $reduce_now (shared due to insufficient stock in primary store)</p>";
+                        echo "<p class='text-black'>Reduced $reduce_now from Store '$alt_store_name' for Product '$product_name' (shared due to insufficient stock in primary store).</p>";
+
+                        // Call replenishment logic
+                        $stmt = $conn->prepare("SELECT warehouse_id FROM stores WHERE store_id = ?");
+                        $stmt->bind_param("i", $alt_store_id);
+                        $stmt->execute();
+                        $stmt->bind_result($warehouse_id);
+                        $stmt->fetch();
+                        $stmt->close();
+
+                        if ($warehouse_id !== null) {
+                            //foreach (['store', 'warehouse'] as $sourceType) {
+                                $sourceType = 'store';
+                                $stmt = $conn->prepare("CALL PlaceOrderForLowInventory(?, ?, ?)");
+                                $stmt->bind_param("iis", $product_id, $alt_store_id, $sourceType);
+                                $stmt->execute();
+                                $stmt->close();
+                           // }
+                        } else {
+                            echo "<p class='text-black'>No warehouse assigned to store ID $alt_store_id.</p>";
+                        }
+
+                        $reductionsPerformed = true;
+                        $remaining_quantity -= $reduce_now;
+                        $total_reduced += $reduce_now;
+                    }
+
+                    // If after all that, not all quantity could be fulfilled
+                    if ($remaining_quantity > 0) {
+                        echo "<p class='text-black'>Could not fully fulfill Product '$product_name'. Total reduced: $total_reduced out of $ordered_quantity.</p>";
+                    }
+                }
+
+                    
                     // Get the warehouse ID for the store
                     $warehouse_id = null;
                     $stmt = $conn->prepare("SELECT warehouse_id FROM stores WHERE store_id = ?");
@@ -228,15 +304,15 @@ function processUserOrderReductions($conn, $selectedDate) {
                         mysqli_stmt_execute($stmt);
                         mysqli_stmt_close($stmt);
                     } else {
-                        echo "<p class='text-danger'>Warehouse ID not found for Store ID $store_id.</p>";
+                        echo "<p class='text-black'>Warehouse ID not found for Store ID $store_id.</p>";
                     }
-                } else {
-                    echo "<p class='text-danger'>Inventory update failed: " . $update->error . "</p>";
-                    $update->close();
-                }
+               // } else {
+              //      echo "<p class='text-black'>Inventory update failed: " . $update->error . "</p>";
+              //      $update->close();
+             //   }
             
                 // Echo result
-                echo "<p class='text-black'>Reduced quantity (Old Quantity: $old_quantity) for Product '$product_name' in Store '$store_name' by $quantity_to_reduce.</p>";
+               // echo "<p class='text-black'>Reduced quantity (Old Quantity: $old_quantity) for Product '$product_name' in Store '$store_name' by $quantity_to_reduce.</p>";
 
                 // Set the flag to indicate that reductions were performed
                 $reductionsPerformed = true;
